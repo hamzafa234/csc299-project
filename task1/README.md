@@ -1,6 +1,7 @@
-Use the 1,2,3,4, and 5 keys to navigate
-1 to add a task 
-2 to look at list of tasks 
-3 to complete a task 
-4 to delete a task 
-5 to exit 
+# step 1: save the code on a directory on your computer 
+# Step 2: navigate to the directory 
+# type "python3 code.py add yourtaskhere" to add a task
+# type "python3 code.py list" to see list 
+# type "python3 code.py complete 1" to mark task 1 as complete 
+# type "python3 code.py delete 1" to delete task 1 
+# type "python3 code.py search thing" to search for thing 
