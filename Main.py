@@ -1,8 +1,14 @@
 import json
+import sys
 import yfinance as yf
 from datetime import datetime
 import pandas as pd
 import requests
+from openai import OpenAI
+
+client = OpenAI(
+  api_key="XXXXXXXXXXXXXXXX"
+)
 
 class FinancialDataFetcher:
     def __init__(self, ticker):
@@ -116,138 +122,194 @@ class FinancialDataFetcher:
             print(f"Error saving to JSON: {e}")
             return False
 
-
-def get_risk_free_rate():
-    # Fetch current U.S. 10-year Treasury yield from an external API or web scrape
-    # Here we use a public API for demonstration (FRED, requires API key; for demo, we use a placeholder)
-    # Replace 'YOUR_API_KEY' with your FRED API key
-    url = 'https://api.stlouisfed.org/fred/series/observations'
-    params = {
-        'series_id': 'DGS10',
-        'api_key': 'YOUR_API_KEY',
-        'file_type': 'json',
-        'sort_order': 'desc',
-        'limit': 1
-    }
-    response = requests.get(url, params=params)
-    data = response.json()
-    if 'observations' in data and len(data['observations']) > 0:
-        return float(data['observations'][0]['value']) / 100
-    else:
-        # Fallback, use a static value
-        return 0.045  # 4.5%
-
-def get_market_return():
-    # For demo, use a static value (e.g., 10% for S&P 500)
-    return 0.10
-
-def get_tax_rate(ticker):
-    # Use Financial Modeling Prep API for tax rate (requires API key, use placeholder)
-    url = f'https://financialmodelingprep.com/api/v3/income-statement/{ticker}?limit=1&apikey=YOUR_API_KEY'
-    response = requests.get(url)
-    data = response.json()
-    if data and len(data) > 0:
-        income_before_tax = data[0]['incomeBeforeTax']
-        income_tax_expense = data[0]['incomeTaxExpense']
-        if income_before_tax > 0:
-            return income_tax_expense / income_before_tax
-    return 0.21  # fallback to US corporate tax rate
-
-def get_cost_of_debt(ticker):
-    # Use Financial Modeling Prep API for interest expense and total debt (requires API key)
-    url_is = f'https://financialmodelingprep.com/api/v3/income-statement/{ticker}?limit=1&apikey=YOUR_API_KEY'
-    url_bs = f'https://financialmodelingprep.com/api/v3/balance-sheet-statement/{ticker}?limit=1&apikey=YOUR_API_KEY'
-    resp_is = requests.get(url_is).json()
-    resp_bs = requests.get(url_bs).json()
-    if resp_is and resp_bs:
-        interest_expense = abs(resp_is[0]["interestExpense"])
-        total_debt = resp_bs[0]["shortTermDebt"] + resp_bs[0]["longTermDebt"]
-        if total_debt > 0:
-            return interest_expense / total_debt
-    return 0.03  # fallback estimate
-
-def calculate_wacc(ticker):
-    # Fetch from yfinance
-    stock = yf.Ticker(ticker)
-    info = stock.info
-
-    # Market Value of Equity
-    market_cap = info['marketCap']
-
-    # Market Value of Debt
-    total_debt = info.get('totalDebt', 0)
-    if total_debt is None:
-        total_debt = 0
-
-    # Beta
-    beta = info.get('beta', 1)
-
-    # Cost of Equity
-    rf = get_risk_free_rate()
-    rm = get_market_return()
-    cost_of_equity = rf + beta * (rm - rf)
-
-    # Cost of Debt
-    cost_of_debt = get_cost_of_debt(ticker)
-
-    # Tax Rate
-    tax_rate = get_tax_rate(ticker)
-
-    # WACC calculation
-    E = market_cap
-    D = total_debt
-    V = E + D
-    if V == 0:
-        raise ValueError("Zero enterprise value.")
-
-    wacc = (E / V) * cost_of_equity + (D / V) * cost_of_debt * (1 - tax_rate)
-    return {
-        "cost_of_equity": cost_of_equity,
-        "cost_of_debt": cost_of_debt,
-        "tax_rate": tax_rate,
-        "market_cap": E,
-        "total_debt": D,
-        "wacc": wacc
-    }
-
+def get_10y_treasury_yield():
+    """
+    Fetches the latest 10-Year US Treasury yield (^TNX) from Yahoo Finance.
+    Returns the yield as a float (in percent).
+    """
+    ticker = yf.Ticker("^TNX")
+    data = ticker.history(period="1d")
+    
+    if data.empty:
+        raise ValueError("No data returned for ^TNX.")
+    
+    latest_yield = data["Close"].iloc[-1]
+    return latest_yield
 
 def main():
-    """Main function to run the financial data fetcher"""
     print("=" * 60)
-    print("Yahoo Finance Financial Data Fetcher")
+    print("Equity Research Assistant")
     print("=" * 60)
     
-    ticker = input("\nEnter stock ticker (e.g., AAPL, MSFT, GOOGL): ").strip()
-    
+    command = sys.argv[1].lower() 
+
+    global ticker
+    ticker = command if command != "" else None
+
     if not ticker:
         ticker = "AAPL"  # Default to Apple
         print(f"No ticker provided, using default: {ticker}")
     
     fetcher = FinancialDataFetcher(ticker)
     success = fetcher.save_to_json()
+
+    global beta 
+    global cap 
+    stock = yf.Ticker(ticker)
+    info = stock.info
+    beta = info.get("beta")
+    cap = info.get('marketCap', None)
+    global current_price
+    current_price = stock.info.get("currentPrice")
     
+
     if success:
         print("\n✓ Done! Check the generated JSON file for the financial data.")
+
     else:
         print("\n✗ Failed to fetch and save financial data.")
         print("Please check that the ticker symbol is valid and try again.")
-    
-    # Calculate WACC for the same ticker
-    try:
-        print("\n" + "=" * 60)
-        print("Calculating WACC...")
-        print("=" * 60)
-        result = calculate_wacc(ticker)
-        print(f"\nWACC for {ticker}: {result['wacc']:.4f} ({result['wacc']*100:.2f}%)")
-        print("\nDetails:")
-        print(f"  Cost of Equity: {result['cost_of_equity']:.4f} ({result['cost_of_equity']*100:.2f}%)")
-        print(f"  Cost of Debt: {result['cost_of_debt']:.4f} ({result['cost_of_debt']*100:.2f}%)")
-        print(f"  Tax Rate: {result['tax_rate']:.4f} ({result['tax_rate']*100:.2f}%)")
-        print(f"  Market Cap: ${result['market_cap']:,.0f}")
-        print(f"  Total Debt: ${result['total_debt']:,.0f}")
-    except Exception as e:
-        print(f"\n✗ Error calculating WACC: {e}")
 
 
 if __name__ == "__main__":
     main()
+    global yield_10y
+    yield_10y = get_10y_treasury_yield()
+
+    ERP = 10 - yield_10y
+
+    #print(f"10-Year US Treasury Yield: {yield_10y:.2f}%")
+    #print("Expected market return: 10%")
+    #print(f"Equity Risk Premium: {ERP:.2f}%")
+    #print(f"Beta: {beta}")
+    #print(f"Market Capitalization: {cap}")
+
+
+    with open(f'{ticker}_financials.json', 'r') as file:
+            data = json.load(file)
+
+    # Access the first balance sheet entry
+    latest_balance_sheet = data['balanceSheet'][0]
+
+    income = data['incomeStatement'][0]
+
+    cash = data['cashFlowStatement'][0]
+
+    # Get Total Debt
+    total_debt = latest_balance_sheet['Total Debt']
+
+    tax_rate = income["Tax Rate For Calcs"]
+
+
+    weight_of_debt = total_debt / (total_debt + cap)
+    weight_of_equity = cap / (total_debt + cap)
+
+    weight_of_debt = f"{weight_of_debt:.4f}"
+    weight_of_equity = f"{weight_of_equity:.4f}"
+
+    interest_expense = income['Interest Expense']
+    cost_of_debt = abs(interest_expense / total_debt) * 100
+
+    #print(f"Weight of Debt: {weight_of_debt}")
+    #print(f"Weight of Equity: {weight_of_equity}")
+    #print(f"Tax Rate: {tax_rate:.4f}")
+    print("\n" + "=" * 60)
+    print(" ")
+    print("WACC Calculation")
+    print(" ")
+    cost_of_equity = yield_10y + beta * ERP
+    print(f"Cost of Equity: {cost_of_equity:.2f}%")
+    print(f"Cost of Debt: {cost_of_debt:.2f}%")
+    WACC = (float(weight_of_equity) * cost_of_equity) + (float(weight_of_debt) * cost_of_debt * (1 - tax_rate))
+    print(f"WACC: {WACC:.2f}%")
+
+    print("\n" + "=" * 60)
+
+    print("Capital Structure Summary")
+    print(" ")
+    print(f"Market Capitalization: {cap}")
+    print(f"Total Debt: {total_debt}")
+    print(f"Cash and Cash Equivalents: {latest_balance_sheet['Cash And Cash Equivalents']}")
+    EV = cap + total_debt - latest_balance_sheet['Cash And Cash Equivalents']
+    print(f"Enterprise Value: {EV}")
+
+    print(" " )
+    print(f"shares outstanding: {income['Basic Average Shares']}") 
+    netdebtpershare = (total_debt - latest_balance_sheet['Cash And Cash Equivalents']) / income['Basic Average Shares'] 
+    print(f"Net Debt per Share: {netdebtpershare:.2f}")
+    print(" " )
+    print("=" * 60)
+    print(" ")
+    #response = client.responses.create(
+    #    model="gpt-5-nano",
+    #    tools=[{"type": "web_search"}],
+    #    input="Tell me a brief summary about what the company with ticker symbol" + ticker + " does. Do not ask any follow up questions.",
+    #    store=True,
+    #)
+    #print(response.output_text);
+
+    response = client.responses.create(
+        model="gpt-5-nano",
+        tools=[{"type": "web_search"}],
+        input="get me the yield to maturity for" + ticker + " look at a random bond that is due in more than 5 years. Do not ask any follow up questions. Return something that can be stored as a float in python. Do not return any text other than the float. If the yeild is 5.49% you will return 0.0549",
+        store=True,
+    )
+    yeild = float(response.output_text)
+    yeild = yeild * 100
+    print("Debt Market Information")
+    print(" ")
+    print(f"Market yield of debt {yeild:.2f}%")
+    print(" ")
+    print(f"Spread to 10y treasury: {yeild - yield_10y:.2f}%")
+    
+    print(" ")
+    print("=" * 60)
+    print(" ")
+    fcf = cash['Free Cash Flow']
+    print(f"Free Cash Flow: {fcf}")
+    print(" ")
+    fcf_per_share = fcf / income['Basic Average Shares']
+    print(f"Free Cash Flow per Share: {fcf_per_share:.2f}")
+    print(" ")
+    price_to_fcf = cap / fcf
+    print(f"Price to Free Cash Flow Ratio: {price_to_fcf:.2f}")
+    print(" ")
+    print("=" * 60)
+    print(" ")
+    print("Growth needed to justify current Price")
+    print(" ")
+    yearone = price_to_fcf/2
+    yearone = yearone / 100
+    Eone = fcf_per_share * (1 + yearone)
+    print(f"Year 1 Growth needed: {yearone*100:.2f}%")
+    print(f"Year 1 FCF per share needed: {Eone:.2f}")
+    print(" ")
+    current_price = current_price * ((WACC / 100) + 1)
+    yeartwo_pfcf = current_price/Eone 
+    yeartwogrowth = yeartwo_pfcf/200
+    print(f"Year 2 Growth needed: {yeartwogrowth*100:.2f}%")
+    Etwo = Eone * (1 + yeartwogrowth)
+    print(f"Year 2 FCF per share needed: {Etwo:.2f}")
+    print(" ")
+    current_price = current_price * ((WACC / 100) + 1) 
+    yearthree_pfcf = current_price/Etwo
+    yearthreegrowth = yearthree_pfcf/200
+    print(f"Year 3 Growth needed: {yearthreegrowth*100:.2f}%")
+    Ethree = Etwo * (1 + yearthreegrowth)
+    print(f"Year 3 FCF per share needed: {Ethree:.2f}")
+    print(" ")
+    current_price = current_price * ((WACC / 100) + 1)
+    yearfour_pfcf = current_price/Ethree
+    yearfourgrowth = yearfour_pfcf/200
+    print(f"Year 4 Growth needed: {yearfourgrowth*100:.2f}%")
+    Efour = Ethree * (1 + yearfourgrowth)
+    print(f"Year 4 FCF per share needed: {Efour:.2f}")
+    print(" ")
+    current_price = current_price * ((WACC / 100) + 1)
+    yearfive_pfcf = current_price/Efour
+    yearfivegrowth = yearfive_pfcf/200
+    print(f"Year 5 Growth needed: {yearfivegrowth*100:.2f}%")
+    Efive = Efour * (1 + yearfivegrowth)
+    print(f"Year 5 FCF per share needed: {Efive:.2f}")
+    print(" ")
+    print("=" * 60) 
