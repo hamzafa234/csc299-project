@@ -7,7 +7,7 @@ import requests
 from openai import OpenAI
 
 client = OpenAI(
-  api_key="XXXXXXXXXXXXXXXX"
+  api_key="XXXXXX"
 )
 
 class FinancialDataFetcher:
@@ -136,9 +136,37 @@ def get_10y_treasury_yield():
     latest_yield = data["Close"].iloc[-1]
     return latest_yield
 
+def get_20y_treasury_yield():
+    """
+    Fetches the latest 20-Year US Treasury yield (^TYX) from Yahoo Finance.
+    Returns the yield as a float (in percent).
+    """
+    ticker = yf.Ticker("^TYX")  # 20-Year Treasury Index
+    data = ticker.history(period="1d")
+    
+    if data.empty:
+        raise ValueError("No data returned for ^TYX.")
+    
+    latest_yield = data["Close"].iloc[-1]
+    return latest_yield
+
+def get_30y_treasury_yield():
+    """
+    Fetches the latest 30-Year US Treasury yield (^TYX) from Yahoo Finance.
+    Returns the yield as a float (in percent).
+    """
+    ticker = yf.Ticker("^TYX")  # 30-Year Treasury Index
+    data = ticker.history(period="1d")
+    
+    if data.empty:
+        raise ValueError("No data returned for ^TYX.")
+    
+    latest_yield = data["Close"].iloc[-1]
+    return latest_yield
+
 def main():
     print("=" * 60)
-    print("Equity Research Assistant")
+    print("Equity Research Terminal")
     print("=" * 60)
     
     command = sys.argv[1].lower() 
@@ -178,13 +206,6 @@ if __name__ == "__main__":
 
     ERP = 10 - yield_10y
 
-    #print(f"10-Year US Treasury Yield: {yield_10y:.2f}%")
-    #print("Expected market return: 10%")
-    #print(f"Equity Risk Premium: {ERP:.2f}%")
-    #print(f"Beta: {beta}")
-    #print(f"Market Capitalization: {cap}")
-
-
     with open(f'{ticker}_financials.json', 'r') as file:
             data = json.load(file)
 
@@ -210,9 +231,6 @@ if __name__ == "__main__":
     interest_expense = income['Interest Expense']
     cost_of_debt = abs(interest_expense / total_debt) * 100
 
-    #print(f"Weight of Debt: {weight_of_debt}")
-    #print(f"Weight of Equity: {weight_of_equity}")
-    #print(f"Tax Rate: {tax_rate:.4f}")
     print("\n" + "=" * 60)
     print(" ")
     print("WACC Calculation")
@@ -221,15 +239,15 @@ if __name__ == "__main__":
     print(f"Cost of Equity: {cost_of_equity:.2f}%")
     print(f"Cost of Debt: {cost_of_debt:.2f}%")
     WACC = (float(weight_of_equity) * cost_of_equity) + (float(weight_of_debt) * cost_of_debt * (1 - tax_rate))
-    print(f"WACC: {WACC:.2f}%")
+    print(f"\033[36mWACC: {WACC:.2f}%\033[0m")
 
     print("\n" + "=" * 60)
 
     print("Capital Structure Summary")
     print(" ")
     print(f"Market Capitalization: {cap}")
-    print(f"Total Debt: {total_debt}")
-    print(f"Cash and Cash Equivalents: {latest_balance_sheet['Cash And Cash Equivalents']}")
+    print(f"\033[31mTotal Debt: {total_debt}\033[0m")
+    print(f"\033[32mCash and Cash Equivalents: {latest_balance_sheet['Cash And Cash Equivalents']}\033[0m")
     EV = cap + total_debt - latest_balance_sheet['Cash And Cash Equivalents']
     print(f"Enterprise Value: {EV}")
 
@@ -240,28 +258,41 @@ if __name__ == "__main__":
     print(" " )
     print("=" * 60)
     print(" ")
-    #response = client.responses.create(
-    #    model="gpt-5-nano",
-    #    tools=[{"type": "web_search"}],
-    #    input="Tell me a brief summary about what the company with ticker symbol" + ticker + " does. Do not ask any follow up questions.",
-    #    store=True,
-    #)
-    #print(response.output_text);
 
     response = client.responses.create(
         model="gpt-5-nano",
         tools=[{"type": "web_search"}],
-        input="get me the yield to maturity for" + ticker + " look at a random bond that is due in more than 5 years. Do not ask any follow up questions. Return something that can be stored as a float in python. Do not return any text other than the float. If the yeild is 5.49% you will return 0.0549",
+        input="get me the yield to maturity for" + ticker + "that is due in more than 5 years. Chose the bond that was traded the most recently. Do not ask any follow up questions. Return a list that has two floats. Do not return any text other than the list. If the yeild is 5.49 percent and has a maturity date of 2065 you will return [0.0549, 2065.0]",
         store=True,
     )
-    yeild = float(response.output_text)
+
+    bond_data = eval(response.output_text)
+    yeild = bond_data[0]
+    bond_maturity = bond_data[1]
     yeild = yeild * 100
-    print("Debt Market Information")
+
+    delta = bond_maturity - datetime.now().year
+    if delta > 25:
+        treasury_yield = get_30y_treasury_yield()
+        tbill = 30
+    elif delta > 15:
+        treasury_yield = get_20y_treasury_yield()
+        tbill = 20
+    else:
+        treasury_yield = get_10y_treasury_yield()
+        tbill = 10
+
+    print("Credit Spread Analysis")
     print(" ")
-    print(f"Market yield of debt {yeild:.2f}%")
+    print(f"Bond Maturity Year: {bond_maturity:.0f}")
     print(" ")
-    print(f"Spread to 10y treasury: {yeild - yield_10y:.2f}%")
-    
+    print(f"Market yield of debt: {yeild:.2f}%")
+    print(" ")
+    print(f"{tbill}y Treasury Yield: {treasury_yield:.2f}%")
+    print(" ")
+    print(f"\033[31mSpread to {tbill}y treasury: {yeild - treasury_yield:.2f}%\033[0m")
+    print(" ")
+    print("Negative spread indicates debt market has low liquidity for this companies bonds.")
     print(" ")
     print("=" * 60)
     print(" ")
@@ -272,44 +303,51 @@ if __name__ == "__main__":
     print(f"Free Cash Flow per Share: {fcf_per_share:.2f}")
     print(" ")
     price_to_fcf = cap / fcf
-    print(f"Price to Free Cash Flow Ratio: {price_to_fcf:.2f}")
+    print(f"\033[36mPrice to Free Cash Flow Ratio: {price_to_fcf:.2f}\033[0m")
     print(" ")
     print("=" * 60)
     print(" ")
-    print("Growth needed to justify current Price")
+    print("Growth needed to justify current Price Based on FCF per share")
     print(" ")
-    yearone = price_to_fcf/2
-    yearone = yearone / 100
-    Eone = fcf_per_share * (1 + yearone)
-    print(f"Year 1 Growth needed: {yearone*100:.2f}%")
-    print(f"Year 1 FCF per share needed: {Eone:.2f}")
-    print(" ")
-    current_price = current_price * ((WACC / 100) + 1)
-    yeartwo_pfcf = current_price/Eone 
-    yeartwogrowth = yeartwo_pfcf/200
-    print(f"Year 2 Growth needed: {yeartwogrowth*100:.2f}%")
-    Etwo = Eone * (1 + yeartwogrowth)
-    print(f"Year 2 FCF per share needed: {Etwo:.2f}")
-    print(" ")
-    current_price = current_price * ((WACC / 100) + 1) 
-    yearthree_pfcf = current_price/Etwo
-    yearthreegrowth = yearthree_pfcf/200
-    print(f"Year 3 Growth needed: {yearthreegrowth*100:.2f}%")
-    Ethree = Etwo * (1 + yearthreegrowth)
-    print(f"Year 3 FCF per share needed: {Ethree:.2f}")
-    print(" ")
-    current_price = current_price * ((WACC / 100) + 1)
-    yearfour_pfcf = current_price/Ethree
-    yearfourgrowth = yearfour_pfcf/200
-    print(f"Year 4 Growth needed: {yearfourgrowth*100:.2f}%")
-    Efour = Ethree * (1 + yearfourgrowth)
-    print(f"Year 4 FCF per share needed: {Efour:.2f}")
-    print(" ")
-    current_price = current_price * ((WACC / 100) + 1)
-    yearfive_pfcf = current_price/Efour
-    yearfivegrowth = yearfive_pfcf/200
-    print(f"Year 5 Growth needed: {yearfivegrowth*100:.2f}%")
-    Efive = Efour * (1 + yearfivegrowth)
-    print(f"Year 5 FCF per share needed: {Efive:.2f}")
-    print(" ")
-    print("=" * 60) 
+
+    if price_to_fcf > 0:
+
+        yearone = price_to_fcf/2
+        yearone = yearone / 100
+        Eone = fcf_per_share * (1 + yearone)
+        print(f"\033[32mYear 1 Growth needed: {yearone*100:.2f}%\033[0m")
+        print(f"Year 1 FCF per share needed: {Eone:.2f}")
+        print(" ")
+        current_price = current_price * ((WACC / 100) + 1)
+        yeartwo_pfcf = current_price/Eone 
+        yeartwogrowth = yeartwo_pfcf/200
+        print(f"\033[32mYear 2 Growth needed: {yeartwogrowth*100:.2f}%\033[0m")
+        Etwo = Eone * (1 + yeartwogrowth)
+        print(f"Year 2 FCF per share needed: {Etwo:.2f}")
+        print(" ")
+        current_price = current_price * ((WACC / 100) + 1) 
+        yearthree_pfcf = current_price/Etwo
+        yearthreegrowth = yearthree_pfcf/200
+        print(f"\033[32mYear 3 Growth needed: {yearthreegrowth*100:.2f}%\033[0m")
+        Ethree = Etwo * (1 + yearthreegrowth)
+        print(f"Year 3 FCF per share needed: {Ethree:.2f}")
+        print(" ")
+        current_price = current_price * ((WACC / 100) + 1)
+        yearfour_pfcf = current_price/Ethree
+        yearfourgrowth = yearfour_pfcf/200
+        print(f"\033[32mYear 4 Growth needed: {yearfourgrowth*100:.2f}%\033[0m")
+        Efour = Ethree * (1 + yearfourgrowth)
+        print(f"Year 4 FCF per share needed: {Efour:.2f}")
+        print(" ")
+        current_price = current_price * ((WACC / 100) + 1)
+        yearfive_pfcf = current_price/Efour
+        yearfivegrowth = yearfive_pfcf/200
+        print(f"\033[32mYear 5 Growth needed: {yearfivegrowth*100:.2f}%\033[0m")
+        Efive = Efour * (1 + yearfivegrowth)
+        print(f"Year 5 FCF per share needed: {Efive:.2f}")
+        print(" ")
+        print("=" * 60) 
+
+    else:
+        
+        print("Price to Free Cash Flow must be positive to compute growth rates needed.")
