@@ -1,2 +1,8 @@
-#Mostly the same as task1, you can use the help function to see all commands
-#Also added a priorty level 
+# step 1: save the code on a directory on your computer 
+# Step 2: navigate to the directory 
+# type "python3 code.py add yourtaskhere" to add a task
+# type "python3 code.py list" to see list 
+# type "python3 code.py complete 1" to mark task 1 as complete 
+# type "python3 code.py delete 1" to delete task 1 
+# type "python3 code.py search thing" to search for thing 
+# type "python3 code.py change <task id>" to change priority 
