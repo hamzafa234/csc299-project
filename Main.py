@@ -7,7 +7,7 @@ import requests
 from openai import OpenAI
 
 client = OpenAI(
-  api_key="xxxxx"
+  api_key="XXXXXXXXXXXXXXXXXXXXXXX"
 )
 
 class FinancialDataFetcher:
@@ -218,23 +218,59 @@ def get_30y_treasury_yield():
     latest_yield = data["Close"].iloc[-1]
     return latest_yield
 
-def free_cash_flow():
+def Statements():
         with open(f'{ticker}_financials.json', 'r') as file:
             data = json.load(file)
 
         income = data['incomeStatement'][0]
         cash = data['cashFlowStatement'][0]
+        income2 = data['incomeStatement'][1]
+        cash2 = data['cashFlowStatement'][1]
+        income3 = data['incomeStatement'][2]
+        cash3 = data['cashFlowStatement'][2]
+        income4 = data['incomeStatement'][3]
+        cash4 = data['cashFlowStatement'][3]
+
         print("=" * 60)
         print(" ")
-        fcf = cash['Free Cash Flow']
-        print(f"Free Cash Flow: {fcf}")
+        print("Income Statement Summary")
         print(" ")
-        fcf_per_share = fcf / income['Basic Average Shares']
-        print(f"Free Cash Flow per Share: {fcf_per_share:.2f}")
+        print(f"Fiscal Year:         {income['date']:>10} | {income2['date']:>10} | {income3['date']:>10} | {income4['date']:>10}")
         print(" ")
-        price_to_fcf = cap / fcf
-        print(f"\033[36mPrice to Free Cash Flow Ratio: {price_to_fcf:.2f}\033[0m")
+        print(f"Total Revenue:       {'100%':>10} | {'100%':>10} | {'100%':>10} | {'100%':>10}")
+        print(f"Cost of Revenue:     {income['Cost Of Revenue'] / income['Total Revenue'] * 100:>9.2f}% | {income2['Cost Of Revenue'] / income2['Total Revenue'] * 100:>9.2f}% | {income3['Cost Of Revenue'] / income3['Total Revenue'] * 100:>9.2f}% | {income4['Cost Of Revenue'] / income4['Total Revenue'] * 100:>9.2f}%")
+        print(f"Gross Profit:        {income['Gross Profit'] / income['Total Revenue'] * 100:>9.2f}% | {income2['Gross Profit'] / income2['Total Revenue'] * 100:>9.2f}% | {income3['Gross Profit'] / income3['Total Revenue'] * 100:>9.2f}% | {income4['Gross Profit'] / income4['Total Revenue'] * 100:>9.2f}%")
+        print(f"Operating Expenses:  {income['Operating Expense'] / income['Total Revenue'] * 100:>9.2f}% | {income2['Operating Expense'] / income2['Total Revenue'] * 100:>9.2f}% | {income3['Operating Expense'] / income3['Total Revenue'] * 100:>9.2f}% | {income4['Operating Expense'] / income4['Total Revenue'] * 100:>9.2f}%")
+        print(f"Operating Income:    {income['Operating Income'] / income['Total Revenue'] * 100:>9.2f}% | {income2['Operating Income'] / income2['Total Revenue'] * 100:>9.2f}% | {income3['Operating Income'] / income3['Total Revenue'] * 100:>9.2f}% | {income4['Operating Income'] / income4['Total Revenue'] * 100:>9.2f}%")
+        print(f"Tax Expense:         {income['Tax Provision'] / income['Total Revenue'] * 100:>9.2f}% | {income2['Tax Provision'] / income2['Total Revenue'] * 100:>9.2f}% | {income3['Tax Provision'] / income3['Total Revenue'] * 100:>9.2f}% | {income4['Tax Provision'] / income4['Total Revenue'] * 100:>9.2f}%")
+        print(f"Net Income:          {income['Net Income'] / income['Total Revenue'] * 100:>9.2f}% | {income2['Net Income'] / income2['Total Revenue'] * 100:>9.2f}% | {income3['Net Income'] / income3['Total Revenue'] * 100:>9.2f}% | {income4['Net Income'] / income4['Total Revenue'] * 100:>9.2f}%")
         print(" ")
+        print("YOY changes:")
+        print(f"Revenue Growth:      {(income['Total Revenue'] - income2['Total Revenue']) / income2['Total Revenue'] * 100:>9.2f}% | {(income2['Total Revenue'] - income3['Total Revenue']) / income3['Total Revenue'] * 100:>9.2f}% | {(income3['Total Revenue'] - income4['Total Revenue']) / income4['Total Revenue'] * 100:>9.2f}%")
+        print(f"Cost of Revenue:     {(income['Cost Of Revenue'] - income2['Cost Of Revenue']) / income2['Cost Of Revenue'] * 100:>9.2f}% | {(income2['Cost Of Revenue'] - income3['Cost Of Revenue']) / income3['Cost Of Revenue'] * 100:>9.2f}% | {(income3['Cost Of Revenue'] - income4['Cost Of Revenue']) / income4['Cost Of Revenue'] * 100:>9.2f}%")
+        print(f"Gross Profit:        {(income['Gross Profit'] - income2['Gross Profit']) / income2['Gross Profit'] * 100:>9.2f}% | {(income2['Gross Profit'] - income3['Gross Profit']) / income3['Gross Profit'] * 100:>9.2f}% | {(income3['Gross Profit'] - income4['Gross Profit']) / income4['Gross Profit'] * 100:>9.2f}%")
+        print(f"Operating Expense:   {(income['Operating Expense'] - income2['Operating Expense']) / income2['Operating Expense'] * 100:>9.2f}% | {(income2['Operating Expense'] - income3['Operating Expense']) / income3['Operating Expense'] * 100:>9.2f}% | {(income3['Operating Expense'] - income4['Operating Expense']) / income4['Operating Expense'] * 100:>9.2f}%")
+        print(f"Operating Income:    {(income['Operating Income'] - income2['Operating Income']) / income2['Operating Income'] * 100:>9.2f}% | {(income2['Operating Income'] - income3['Operating Income']) / income3['Operating Income'] * 100:>9.2f}% | {(income3['Operating Income'] - income4['Operating Income']) / income4['Operating Income'] * 100:>9.2f}%")
+        print(f"Tax Expense:         {(income['Tax Provision'] - income2['Tax Provision']) / income2['Tax Provision'] * 100:>9.2f}% | {(income2['Tax Provision'] - income3['Tax Provision']) / income3['Tax Provision'] * 100:>9.2f}% | {(income3['Tax Provision'] - income4['Tax Provision']) / income4['Tax Provision'] * 100:>9.2f}%")
+        print(f"Net Income Growth:   {(income['Net Income'] - income2['Net Income']) / income2['Net Income'] * 100:>9.2f}% | {(income2['Net Income'] - income3['Net Income']) / income3['Net Income'] * 100:>9.2f}% | {(income3['Net Income'] - income4['Net Income']) / income4['Net Income'] * 100:>9.2f}%")
+        print(" ")
+        print("Cash Flow Statement Change YOY:")
+        print(" ")
+        print(f"Fiscal Year:             {cash['date']:>10} | {cash2['date']:>10} | {cash3['date']:>10}")
+        print(" ")
+        print(f"Operating Cash Flow:     {(cash['Operating Cash Flow'] - cash2['Operating Cash Flow']) / abs(cash2['Operating Cash Flow']) * 100:>9.2f}% | {(cash2['Operating Cash Flow'] - cash3['Operating Cash Flow']) / abs(cash3['Operating Cash Flow']) * 100:>9.2f}% | {(cash3['Operating Cash Flow'] - cash4['Operating Cash Flow']) / abs(cash4['Operating Cash Flow']) * 100:>9.2f}%")
+        print(f"Investing Cash Flow:     {(cash['Investing Cash Flow'] - cash2['Investing Cash Flow']) / abs(cash2['Investing Cash Flow']) * 100:>9.2f}% | {(cash2['Investing Cash Flow'] - cash3['Investing Cash Flow']) / abs(cash3['Investing Cash Flow']) * 100:>9.2f}% | {(cash3['Investing Cash Flow'] - cash4['Investing Cash Flow']) / abs(cash4['Investing Cash Flow']) * 100:>9.2f}%")
+        print(f"Financing Cash Flow:     {(cash['Financing Cash Flow'] - cash2['Financing Cash Flow']) / abs(cash2['Financing Cash Flow']) * 100:>9.2f}% | {(cash2['Financing Cash Flow'] - cash3['Financing Cash Flow']) / abs(cash3['Financing Cash Flow']) * 100:>9.2f}% | {(cash3['Financing Cash Flow'] - cash4['Financing Cash Flow']) / abs(cash4['Financing Cash Flow']) * 100:>9.2f}%")
+        print(f"Free Cash Flow:          {(cash['Free Cash Flow'] - cash2['Free Cash Flow']) / abs(cash2['Free Cash Flow']) * 100:>9.2f}% | {(cash2['Free Cash Flow'] - cash3['Free Cash Flow']) / abs(cash3['Free Cash Flow']) * 100:>9.2f}% | {(cash3['Free Cash Flow'] - cash4['Free Cash Flow']) / abs(cash4['Free Cash Flow']) * 100:>9.2f}%")
+        print(" ")
+        print("Cash Flow as a Percentage of Revenue:")
+        print(" ")
+        print(f"Operating Cash Flow:     {cash['Operating Cash Flow'] / income['Total Revenue'] * 100:>9.2f}% | {cash2['Operating Cash Flow'] / income2['Total Revenue'] * 100:>9.2f}% | {cash3['Operating Cash Flow'] / income3['Total Revenue'] * 100:>9.2f}%")
+        print(f"Investing Cash Flow:     {cash['Investing Cash Flow'] / income['Total Revenue'] * 100:>9.2f}% | {cash2['Investing Cash Flow'] / income2['Total Revenue'] * 100:>9.2f}% | {cash3['Investing Cash Flow'] / income3['Total Revenue'] * 100:>9.2f}%")
+        print(f"Financing Cash Flow:     {cash['Financing Cash Flow'] / income['Total Revenue'] * 100:>9.2f}% | {cash2['Financing Cash Flow'] / income2['Total Revenue'] * 100:>9.2f}% | {cash3['Financing Cash Flow'] / income3['Total Revenue'] * 100:>9.2f}%")
+        print(f"Free Cash Flow:          {cash['Free Cash Flow'] / income['Total Revenue'] * 100:>9.2f}% | {cash2['Free Cash Flow'] / income2['Total Revenue'] * 100:>9.2f}% | {cash3['Free Cash Flow'] / income3['Total Revenue'] * 100:>9.2f}%")
+        print(" ")
+
         print("=" * 60)
 
 def credit_spread_analysis():
@@ -348,12 +384,9 @@ def wacc_calculation():
     print("=" * 60)
     return WACC
 
-def main():
-    print("=" * 60)
-    print("Equity Research Terminal")
-    print("=" * 60)
+def main(command):
     
-    command = sys.argv[1].lower() 
+    #command = sys.argv[1].lower() 
 
     global ticker
     ticker = command if command != "" else None
@@ -385,10 +418,17 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) < 2:
+        print("="*60 + "\n")
+        print("Equity Research Terminal")
+        print("="*60 + "\n")
+        print("Usage: python Main.py <TICKER>")
+        sys.exit(1)    
     
+    command = sys.argv[1].lower()
+    main(command)
     WACC = wacc_calculation()
     capital_structure_summary()
-    #credit_spread_analysis()
-    free_cash_flow()
+    credit_spread_analysis()
+    Statements()
     calculate_expectations(WACC)
