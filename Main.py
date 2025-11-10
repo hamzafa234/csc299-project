@@ -115,7 +115,7 @@ class FinancialDataFetcher:
             print(f"Error saving to JSON: {e}")
             return False
         
-def calculate_expectations(WACC):
+def calculate_expectations(WACC, ticker):
 
     with open(f'{ticker}_financials.json', 'r') as file:
             data = json.load(file)
@@ -218,7 +218,7 @@ def get_30y_treasury_yield():
     latest_yield = data["Close"].iloc[-1]
     return latest_yield
 
-def Statements():
+def Statements(ticker):
         with open(f'{ticker}_financials.json', 'r') as file:
             data = json.load(file)
 
@@ -275,7 +275,7 @@ def Statements():
         print(" ")
         print("=" * 60)
 
-def credit_spread_analysis():
+def credit_spread_analysis(ticker):
     response = client.responses.create(
         model="gpt-5-nano",
         tools=[{"type": "web_search"}],
@@ -315,7 +315,7 @@ def credit_spread_analysis():
     print(" ")
     print("=" * 60)
 
-def compare():
+def compare(ticker):
     response = client.responses.create(
         model="gpt-5-nano",
         tools=[{"type": "web_search"}],
@@ -347,9 +347,12 @@ def getCompVal(ticker):
     return list
     
 
-def capital_structure_summary():
+def capital_structure_summary(ticker):
     with open(f'{ticker}_financials.json', 'r') as file:
             data = json.load(file)
+
+    stock = yf.Ticker(ticker)
+    cap = stock.info.get('marketCap', None)
 
     total_debt = data['balanceSheet'][0]['Total Debt']
     latest_balance_sheet = data['balanceSheet'][0]
@@ -373,9 +376,13 @@ def capital_structure_summary():
     print("=" * 60)
 
 
-def wacc_calculation():
+def wacc_calculation(ticker):
     global yield_10y
     yield_10y = get_10y_treasury_yield()
+
+    stock = yf.Ticker(ticker)
+    cap = stock.info.get('marketCap', None)
+    beta = stock.info.get("beta")
 
     ERP = 10 - yield_10y
 
@@ -417,6 +424,45 @@ def wacc_calculation():
     print(f"\033[36mWACC: {WACC:.2f}%\033[0m")
     print(" ")
     print("=" * 60)
+
+def wacc_no_print(ticker):
+    global yield_10y
+    yield_10y = get_10y_treasury_yield()
+
+    stock = yf.Ticker(ticker)
+    cap = stock.info.get('marketCap', None)
+    beta = stock.info.get("beta")
+
+    ERP = 10 - yield_10y
+
+    with open(f'{ticker}_financials.json', 'r') as file:
+            data = json.load(file)
+
+    # Access the first balance sheet entry
+    latest_balance_sheet = data['balanceSheet'][0]
+
+    income = data['incomeStatement'][0]
+
+    cash = data['cashFlowStatement'][0]
+
+    # Get Total Debt
+    total_debt = latest_balance_sheet['Total Debt']
+
+    tax_rate = income["Tax Rate For Calcs"]
+
+
+    weight_of_debt = total_debt / (total_debt + cap)
+    weight_of_equity = cap / (total_debt + cap)
+
+    weight_of_debt = f"{weight_of_debt:.4f}"
+    weight_of_equity = f"{weight_of_equity:.4f}"
+
+    interest_expense = income['Interest Expense']
+    cost_of_debt = abs(interest_expense / total_debt) * 100
+
+    cost_of_equity = yield_10y + beta * ERP
+    
+    WACC = (float(weight_of_equity) * cost_of_equity) + (float(weight_of_debt) * cost_of_debt * (1 - tax_rate))
     return WACC
 
 def main(command):
@@ -457,14 +503,39 @@ if __name__ == "__main__":
         print("="*60 + "\n")
         print("Equity Research Terminal")
         print("="*60 + "\n")
-        print("Usage: python Main.py <TICKER>")
+        print("Usage Instructions:")
+        print(" ")
+        print("python Main.py <TICKER> [OPTION]")
+        print("wac - Calculate and display WACC")
+        print("cs  - Show Capital Structure Summary")
+        print("csp - Perform Credit Spread Analysis")
+        print("st  - Display Financial Statements Summary")
+        print("ex  - Calculate Growth Expectations based on WACC")
+        print("c   - Compare with Competitors")
+        print(" ")
+        print("Must use command python3 Main.py <TICKER> before using any options to load financial data.")
+        print(" ")
+        print("="*60 + "\n")
         sys.exit(1)    
     
     command = sys.argv[1].lower()
-    main(command)
-    WACC = wacc_calculation()
-    capital_structure_summary()
-    credit_spread_analysis()
-    Statements()
-    calculate_expectations(WACC)
-    compare()
+    ticker = command 
+
+    if len(sys.argv) <3:
+        main(command) 
+    elif len(sys.argv) ==3:
+        other_com = sys.argv[2].lower() 
+        if other_com == "wac":
+            wacc_calculation(ticker)
+        elif other_com == "cs":
+            capital_structure_summary(ticker)
+        elif other_com == "csp":
+            credit_spread_analysis(ticker)
+        elif other_com == "st":     
+            Statements(ticker)
+        elif other_com == "ex":
+            WACC = wacc_no_print(ticker)
+            calculate_expectations(WACC, ticker)
+        elif other_com == "c":
+            compare(ticker)
+
