@@ -7,7 +7,7 @@ import requests
 from openai import OpenAI
 
 client = OpenAI(
-  api_key="xxxxxxxxx"
+  api_key="xxxxxx"
 )
 
 class FinancialDataFetcher:
@@ -279,7 +279,7 @@ def credit_spread_analysis():
     response = client.responses.create(
         model="gpt-5-nano",
         tools=[{"type": "web_search"}],
-        input="get me the yield to maturity for" + ticker + "that is due in more than 5 years. Chose the bond that was traded the most recently. Do not ask any follow up questions. Return a list that has two floats. Do not return any text other than the list including a link. If the yeild is 5.49 percent and has a maturity date of 2065 you will return [0.0549, 2065.0]",
+        input="get me the yield to maturity for" + ticker + "that is due in more than 5 years. Chose the bond that was traded the most recently. Do not ask any follow up questions. Return a list that has two floats. Do not return any text other than the list. If the yeild is 5.49 percent and has a maturity date of 2065 you will return [0.0549, 2065.0]. Do not return a link ever if the company has no bonds return [0.0, 0.0]",
         store=True,
     )
 
@@ -323,23 +323,18 @@ def compare():
         store=True,
     )
     comp_data = eval(response.output_text)
+    comp_data.append(ticker)
     print("="*60)
     print(" ")
-    if(len(comp_data) > 0):
-        lis1 = getCompVal(comp_data[0])
-        print(comp_data[0], lis1)
-    if(len(comp_data) > 1):
-        lis2 = getCompVal(comp_data[1])
-        print(comp_data[1], lis2)
-    if(len(comp_data) > 2):
-        lis3 = getCompVal(comp_data[2])
-        print(comp_data[2], lis3)
-    if(len(comp_data) > 3):
-        lis4 = getCompVal(comp_data[3])
-        print(comp_data[3], lis4)
-    if(len(comp_data) > 4):
-        lis5 = getCompVal(comp_data[4])
-        print(comp_data[4], lis5)
+    print("Competitor Analysis")
+    print(" ")
+    print(f"{'Ticker':<10} {'Market Cap':>15} {'Trailing P/E':>15} {'Forward P/E':>15}")
+    print(" ")
+    
+    for symbol in comp_data[:6]:
+        values = getCompVal(symbol)
+        print(f"{symbol:<10} {values[0]:>15} {values[1]:>15} {values[2]:>15}")
+    
     print(" ")
     print("=" * 60)
 
@@ -347,9 +342,8 @@ def getCompVal(ticker):
     stock = yf.Ticker(ticker)
     cap = stock.info.get('marketCap', None)
     pe = stock.info.get('trailingPE', None)
-    pfcf = stock.info.get('priceToFreeCashflow', None)
     fpe = stock.info.get('forwardPE', None)
-    list = [cap, pe, pfcf, fpe]
+    list = [cap, pe, fpe]
     return list
     
 
