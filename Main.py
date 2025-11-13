@@ -7,7 +7,7 @@ import requests
 from openai import OpenAI
 
 client = OpenAI(
-  api_key="xxxxxx"
+  api_key="xxxxxxxxx"
 )
 
 class FinancialDataFetcher:
@@ -324,17 +324,20 @@ def compare(ticker):
     )
     comp_data = eval(response.output_text)
     comp_data.append(ticker)
+    
     print("="*60)
     print(" ")
     print("Competitor Analysis")
     print(" ")
-    print(f"{'Ticker':<10} {'Market Cap':>15} {'Trailing P/E':>15} {'Forward P/E':>15}")
+    print(f"{'Ticker':<10} {'Market Cap':>15} {'Enterprise Value':>15} {'Trailing P/E':>15} {'Forward P/E':>15} {'Yield':>15} {'Price to FCF':>15}")
     print(" ")
     
     for symbol in comp_data[:6]:
         values = getCompVal(symbol)
-        print(f"{symbol:<10} {values[0]:>15} {values[1]:>15} {values[2]:>15}")
-    
+        # Convert None values to 'N/A' for display
+        formatted_values = [str(v) if v is not None else 'N/A' for v in values]
+        print(f"{symbol:<10} {formatted_values[0]:>15} {formatted_values[1]:>15} {formatted_values[2]:>15} {formatted_values[3]:>15} {formatted_values[4]:>15} {formatted_values[5]:>15}")
+
     print(" ")
     print("=" * 60)
 
@@ -343,7 +346,11 @@ def getCompVal(ticker):
     cap = stock.info.get('marketCap', None)
     pe = stock.info.get('trailingPE', None)
     fpe = stock.info.get('forwardPE', None)
-    list = [cap, pe, fpe]
+    y = stock.info.get('dividendYield', None)
+    price_to_fcf = stock.info.get('priceToFreeCashflow', None)
+    ev = stock.info.get('enterpriseValue', None)
+
+    list = [cap, ev, pe, fpe, y, price_to_fcf]
     return list
     
 
@@ -408,8 +415,15 @@ def wacc_calculation(ticker):
     weight_of_debt = f"{weight_of_debt:.4f}"
     weight_of_equity = f"{weight_of_equity:.4f}"
 
-    interest_expense = income['Interest Expense']
-    cost_of_debt = abs(interest_expense / total_debt) * 100
+    if 'Interest Expense' in income:
+        interest_expense = income['Interest Expense']
+    else:
+        interest_expense = cash['Interest Paid Supplemental Data']
+    
+    if(interest_expense == None):
+        cost_of_debt = 0
+    else:
+        cost_of_debt = abs(interest_expense / total_debt) * 100
 
     cost_of_equity = yield_10y + beta * ERP
     print("=" * 60)
@@ -457,12 +471,20 @@ def wacc_no_print(ticker):
     weight_of_debt = f"{weight_of_debt:.4f}"
     weight_of_equity = f"{weight_of_equity:.4f}"
 
-    interest_expense = income['Interest Expense']
-    cost_of_debt = abs(interest_expense / total_debt) * 100
+    if 'Interest Expense' in income:
+        interest_expense = income['Interest Expense']
+    else:
+        interest_expense = cash['Interest Paid Supplemental Data']
+    
+    if(interest_expense == None):
+        cost_of_debt = 0
+    else:
+        cost_of_debt = abs(interest_expense / total_debt) * 100
 
     cost_of_equity = yield_10y + beta * ERP
     
     WACC = (float(weight_of_equity) * cost_of_equity) + (float(weight_of_debt) * cost_of_debt * (1 - tax_rate))
+
     return WACC
 
 def main(command):
@@ -510,7 +532,7 @@ if __name__ == "__main__":
         print("cs  - Show Capital Structure Summary")
         print("csp - Perform Credit Spread Analysis")
         print("st  - Display Financial Statements Summary")
-        print("ex  - Calculate Growth Expectations based on WACC")
+        print("ex  - Calculate Growth Expectations based on current price")
         print("c   - Compare with Competitors")
         print(" ")
         print("Must use command python3 Main.py <TICKER> before using any options to load financial data.")
@@ -538,4 +560,3 @@ if __name__ == "__main__":
             calculate_expectations(WACC, ticker)
         elif other_com == "c":
             compare(ticker)
-
