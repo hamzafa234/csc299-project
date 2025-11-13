@@ -7,7 +7,7 @@ import requests
 from openai import OpenAI
 
 client = OpenAI(
-  api_key="xxxxxxxxx"
+  api_key="xxxxx"
 )
 
 class FinancialDataFetcher:
@@ -334,12 +334,35 @@ def compare(ticker):
     
     for symbol in comp_data[:6]:
         values = getCompVal(symbol)
-        # Convert None values to 'N/A' for display
-        formatted_values = [str(v) if v is not None else 'N/A' for v in values]
+        # Format specific columns
+        formatted_values = []
+        for i, v in enumerate(values):
+            if v is None:
+                formatted_values.append('N/A')
+            elif i in [0, 1]:  # Market Cap, Enterprise Value
+                formatted_values.append(format_large_number(v))
+            elif i in [2, 3, 5]:  # Trailing P/E, Forward P/E, Price to FCF
+                formatted_values.append(f"{v:.3f}")
+            else:
+                formatted_values.append(str(v))
+        
         print(f"{symbol:<10} {formatted_values[0]:>15} {formatted_values[1]:>15} {formatted_values[2]:>15} {formatted_values[3]:>15} {formatted_values[4]:>15} {formatted_values[5]:>15}")
 
     print(" ")
     print("=" * 60)
+
+def format_large_number(num):
+    """Format large numbers with B (billions), M (millions), or K (thousands)"""
+    if num >= 1_000_000_000_000:  # Trillions
+        return f"{num / 1_000_000_000_000:.2f}T"
+    elif num >= 1_000_000_000:  # Billions
+        return f"{num / 1_000_000_000:.2f}B"
+    elif num >= 1_000_000:  # Millions
+        return f"{num / 1_000_000:.2f}M"
+    elif num >= 1_000:  # Thousands
+        return f"{num / 1_000:.2f}K"
+    else:
+        return f"{num:.2f}"
 
 def getCompVal(ticker):
     stock = yf.Ticker(ticker)
@@ -347,8 +370,23 @@ def getCompVal(ticker):
     pe = stock.info.get('trailingPE', None)
     fpe = stock.info.get('forwardPE', None)
     y = stock.info.get('dividendYield', None)
-    price_to_fcf = stock.info.get('priceToFreeCashflow', None)
     ev = stock.info.get('enterpriseValue', None)
+    
+    # Calculate Price to FCF manually
+    price_to_fcf = None
+    try:
+        # Get free cash flow from cash flow statement
+        cash_flow = stock.cashflow
+        if not cash_flow.empty and 'Free Cash Flow' in cash_flow.index:
+            # Get the most recent free cash flow (first column)
+            fcf = cash_flow.loc['Free Cash Flow'].iloc[0]
+            
+            # If FCF is positive and we have market cap, calculate ratio
+            if fcf and fcf > 0 and cap:
+                price_to_fcf = cap / fcf
+    except Exception as e:
+        # If calculation fails, leave as None
+        pass
 
     list = [cap, ev, pe, fpe, y, price_to_fcf]
     return list
