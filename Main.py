@@ -5,9 +5,13 @@ from datetime import datetime
 import pandas as pd
 import requests
 from openai import OpenAI
+import typer 
+from typing import Optional
+
+app = typer.Typer()
 
 client = OpenAI(
-  api_key="xxxxx"
+  api_key="xxxxxx"
 )
 
 class FinancialDataFetcher:
@@ -557,44 +561,58 @@ def main(command):
         print("\n✗ Failed to fetch and save financial data.")
         print("Please check that the ticker symbol is valid and try again.")
 
+@app.command()
+def load(
+    ticker: str = typer.Argument(..., help="Ticker symbol of the company")
+):
+    '''Fetch and save financial data for the given ticker (must be run before other commands)'''
+    main(ticker)
+
+
+@app.command()
+def wac (
+    ticker: str = typer.Argument(..., help="Ticker symbol of the company")
+):
+    '''Calculate and display the WACC for the given ticker'''
+    wacc_calculation(ticker)
+
+@app.command()
+def cs(
+    ticker: str = typer.Argument(..., help="Ticker symbol of the company")
+):
+    '''Display the capital structure summary for the given ticker'''
+    capital_structure_summary(ticker)
+
+@app.command()
+def csp(
+    ticker: str = typer.Argument(..., help="Ticker symbol of the company")
+):
+    '''See credit spread for the given ticker'''
+    credit_spread_analysis(ticker)
+
+@app.command()
+def st(
+    ticker: str = typer.Argument(..., help="Ticker symbol of the company")
+):
+    '''Display financial statements summary for the given ticker'''
+    Statements(ticker)
+
+@app.command()
+def ce(
+    ticker: str = typer.Argument(..., help="Ticker symbol of the company")
+):
+    '''Display competitor analysis for the given ticker'''
+    compare(ticker)
+
+@app.command()
+def exp(
+    ticker: str = typer.Argument(..., help="Ticker symbol of the company")
+):
+    '''Calculate growth expectations to justify current price for the given ticker'''
+    WACC = wacc_no_print(ticker)
+    calculate_expectations(WACC, ticker)
+
+
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("="*60 + "\n")
-        print("Equity Research Terminal")
-        print("="*60 + "\n")
-        print("Usage Instructions:")
-        print(" ")
-        print("python Main.py <TICKER> [OPTION]")
-        print("wac - Calculate and display WACC")
-        print("cs  - Show Capital Structure Summary")
-        print("csp - Perform Credit Spread Analysis")
-        print("st  - Display Financial Statements Summary")
-        print("ex  - Calculate Growth Expectations based on current price")
-        print("c   - Compare with Competitors")
-        print(" ")
-        print("Must use command python3 Main.py <TICKER> before using any options to load financial data.")
-        print(" ")
-        print("="*60 + "\n")
-        sys.exit(1)    
-    
-    command = sys.argv[1].lower()
-    ticker = command 
-
-    if len(sys.argv) <3:
-        main(command) 
-    elif len(sys.argv) ==3:
-        other_com = sys.argv[2].lower() 
-        if other_com == "wac":
-            wacc_calculation(ticker)
-        elif other_com == "cs":
-            capital_structure_summary(ticker)
-        elif other_com == "csp":
-            credit_spread_analysis(ticker)
-        elif other_com == "st":     
-            Statements(ticker)
-        elif other_com == "ex":
-            WACC = wacc_no_print(ticker)
-            calculate_expectations(WACC, ticker)
-        elif other_com == "c":
-            compare(ticker)
+    app()
