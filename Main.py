@@ -14,7 +14,7 @@ from openpyxl.utils import get_column_letter
 app = typer.Typer()
 
 client = OpenAI(
-  api_key="xxxxxxxx"
+  api_key="xxxxxxx"
 )
 
 class FinancialDataFetcher:
@@ -504,11 +504,110 @@ def generate_excel(ticker, type):
     ws["M16"] = discount_factor(wacc/100, 1)
 
     # Save the workbook    
-    wb.save(f'{ticker}_financial_model.xlsx')
+    if (type == "default"):
+        wb.save(f'{ticker}_financial_model.xlsx')
+        return
+    elif(type == "expectation"):
+        stock = yf.Ticker(ticker)
+        price_to_fcf = None
+        cap = stock.info.get('marketCap', None)
+        marketcap = cap
     
-    
-    if(type == "expectation"):
-        pass
+        # Get free cash flow from cash flow statement
+        cash_flow = stock.cashflow
+        if not cash_flow.empty and 'Free Cash Flow' in cash_flow.index:
+            # Get the most recent free cash flow (first column)
+            fcf = cash_flow.loc['Free Cash Flow'].iloc[0]
+            
+            # If FCF is positive and we have market cap, calculate ratio
+            if fcf and fcf > 0 and cap:
+                price_to_fcf = cap / fcf
+
+        ws["M18"] = (fcf * ws["M16"].value)/1000000
+
+        yearone = (price_to_fcf/200) + 1
+        ws["D3"] = yearone
+        ws["D5"] = yearone
+        ws["D11"] = yearone
+        ws["C22"] = tax/income_statement['Pretax Income']
+        tax_rate = tax/income_statement['Pretax Income']
+        ws["D22"] = tax_rate
+        ws["E22"] = tax_rate
+        ws["F22"] = tax_rate
+        ws["G22"] = tax_rate
+        ws["H22"] = tax_rate
+        ws["M5"] = yearone
+        ws["M7"] = yearone
+        ws["M11"] = yearone
+
+        fcf = fcf * yearone 
+
+        ws["N18"] = (fcf * ws["N16"].value)/1000000
+
+        cap = cap * (1 + wacc/100)
+        pfcftwo = cap / fcf
+        yeartwo = (pfcftwo/200) + 1
+        ws["E3"] = yeartwo
+        ws["E5"] = yeartwo
+        ws["E11"] = yeartwo
+        ws["N5"] = yeartwo
+        ws["N7"] = yeartwo
+        ws["N11"] = yeartwo
+
+        fcf = fcf * yeartwo
+
+        ws["O18"] = (fcf * ws["O16"].value)/1000000
+
+        cap = cap * (1 + wacc/100)
+        pfcfthree = cap / fcf
+        yearthree = (pfcfthree/200) + 1
+        ws["F3"] = yearthree
+        ws["F5"] = yearthree
+        ws["F11"] = yearthree
+        ws["O5"] = yearthree
+        ws["O7"] = yearthree
+        ws["O11"] = yearthree
+
+        fcf = fcf * yearthree
+        ws["P18"] = (fcf * ws["P16"].value)/1000000
+        cap = cap * (1 + wacc/100)
+        pfcffour = cap / fcf
+        yearfour = (pfcffour/200) + 1
+        ws["G3"] = yearfour
+        ws["G5"] = yearfour
+        ws["G11"] = yearfour
+        ws["P5"] = yearfour
+        ws["P7"] = yearfour
+        ws["P11"] = yearfour
+
+        fcf = fcf * yearfour
+        ws["Q18"] = (fcf * ws["Q16"].value)/1000000
+        cap = cap * (1 + wacc/100)
+        pfcffive = cap / fcf
+        yearfive = (pfcffive/200) + 1
+        ws["H3"] = yearfive
+        ws["H5"] = yearfive
+        ws["H11"] = yearfive
+        ws["Q5"] = yearfive
+        ws["Q7"] = yearfive
+        ws["Q11"] = yearfive
+
+        # subtracting too much need to account for quaters that have already happened
+        TV = (marketcap/1000000) - (ws["M18"].value + ws["N18"].value + ws["O18"].value + ws["P18"].value + ws["Q18"].value)
+        ws["Q20"] = TV
+
+        TTV = TV 
+
+        TV = TV*(1 + wacc/100)**5
+
+        ws["K24"] = TV
+
+        g = 0
+
+        ws["J25"] = g
+
+        wb.save(f'{ticker}_financial_model.xlsx')
+        return
 
 def discount_factor(rate, period):
     return 1 / ((1 + rate) ** period)
@@ -647,7 +746,7 @@ def excel(
     Generate an Excel file with financial data for the given ticker.
     """
     typer.echo(f"Generating {type} Excel file for ticker: {ticker}")
-    if(type == "d"):
+    if(type == "default"):
         generate_excel(ticker, "default")
     
     elif(type == "expectation"):
