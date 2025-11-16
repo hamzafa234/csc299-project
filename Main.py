@@ -7,11 +7,14 @@ import requests
 from openai import OpenAI
 import typer 
 from typing import Optional
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 
 app = typer.Typer()
 
 client = OpenAI(
-  api_key="XXXXXX"
+  api_key="xxxxxxxx"
 )
 
 class FinancialDataFetcher:
@@ -118,67 +121,6 @@ class FinancialDataFetcher:
         except Exception as e:
             print(f"Error saving to JSON: {e}")
             return False
-        
-def calculate_expectations(WACC, ticker):
-
-    with open(f'{ticker}_financials.json', 'r') as file:
-            data = json.load(file)
-
-
-    stock = yf.Ticker(ticker)
-    current_price = stock.info.get("currentPrice")
-    
-    cash = data['cashFlowStatement'][0]
-    fcf = cash['Free Cash Flow']
-    income = data['incomeStatement'][0]
-    fcf_per_share = fcf / income['Basic Average Shares']
-    price_to_fcf = current_price / fcf_per_share
-
-    if price_to_fcf > 0:
-
-        print("=" * 60)
-        print(" ")
-        print("Growth needed to justify current Price Based on FCF per share")
-
-        yearone = price_to_fcf/2
-        yearone = yearone / 100
-        Eone = fcf_per_share * (1 + yearone)
-        print(f"\033[32mYear 1 Growth needed: {yearone*100:.2f}%\033[0m")
-        print(f"Year 1 FCF per share needed: {Eone:.2f}")
-        print(" ")
-        current_price = current_price * ((WACC / 100) + 1)
-        yeartwo_pfcf = current_price/Eone 
-        yeartwogrowth = yeartwo_pfcf/200
-        print(f"\033[32mYear 2 Growth needed: {yeartwogrowth*100:.2f}%\033[0m")
-        Etwo = Eone * (1 + yeartwogrowth)
-        print(f"Year 2 FCF per share needed: {Etwo:.2f}")
-        print(" ")
-        current_price = current_price * ((WACC / 100) + 1) 
-        yearthree_pfcf = current_price/Etwo
-        yearthreegrowth = yearthree_pfcf/200
-        print(f"\033[32mYear 3 Growth needed: {yearthreegrowth*100:.2f}%\033[0m")
-        Ethree = Etwo * (1 + yearthreegrowth)
-        print(f"Year 3 FCF per share needed: {Ethree:.2f}")
-        print(" ")
-        current_price = current_price * ((WACC / 100) + 1)
-        yearfour_pfcf = current_price/Ethree
-        yearfourgrowth = yearfour_pfcf/200
-        print(f"\033[32mYear 4 Growth needed: {yearfourgrowth*100:.2f}%\033[0m")
-        Efour = Ethree * (1 + yearfourgrowth)
-        print(f"Year 4 FCF per share needed: {Efour:.2f}")
-        print(" ")
-        current_price = current_price * ((WACC / 100) + 1)
-        yearfive_pfcf = current_price/Efour
-        yearfivegrowth = yearfive_pfcf/200
-        print(f"\033[32mYear 5 Growth needed: {yearfivegrowth*100:.2f}%\033[0m")
-        Efive = Efour * (1 + yearfivegrowth)
-        print(f"Year 5 FCF per share needed: {Efive:.2f}")
-        print(" ")
-        print("=" * 60) 
-
-    else:
-        
-        print("Price to Free Cash Flow must be positive to compute growth rates needed.")
 
 def get_10y_treasury_yield():
     """
@@ -407,7 +349,7 @@ def capital_structure_summary(ticker):
     latest_balance_sheet = data['balanceSheet'][0]
     income = data['incomeStatement'][0]
 
-    total_debt = format_large_number(total_debt)
+    total_debt_formatted = format_large_number(total_debt)
 
     print("=" * 60)
     print(" ")
@@ -415,32 +357,30 @@ def capital_structure_summary(ticker):
     print(" ")
     print(f"Market Capitalization: {format_large_number(cap)}")
 
-    if(data['balanceSheet'][0]['Preferred Stock Equity'] != None):
-        preferred = data['balanceSheet'][0]['Preferred Stock Equity']
-        pre = data['balanceSheet'][0]['Preferred Stock Equity']
-        preferred = format_large_number(preferred)
-        print(f"Preferred Stock Equity: {preferred}")
-    else: 
-        preferred = 0
-        
+    # Use .get() method to safely retrieve preferred stock value
+    pre = data['balanceSheet'][0].get('Preferred Stock Equity', 0) or 0
     
-    print(f"\033[31mTotal Debt: {total_debt}\033[0m")
+    if pre != 0:
+        preferred_formatted = format_large_number(pre)
+        print(f"Preferred Stock Equity: {preferred_formatted}")
+    
+    print(f"\033[31mTotal Debt: {total_debt_formatted}\033[0m")
 
     cash = latest_balance_sheet['Cash And Cash Equivalents']
-    cash = format_large_number(cash)
+    cash_formatted = format_large_number(cash)
 
-    print(f"Cash And Cash Equivalents: {cash}")
+    print(f"Cash And Cash Equivalents: {cash_formatted}")
     print(" ")
      
-    EV = stock.info.get('marketCap', None) + data['balanceSheet'][0]['Total Debt'] - data['balanceSheet'][0]['Cash And Cash Equivalents'] + pre
+    EV = stock.info.get('marketCap', None) + total_debt - latest_balance_sheet['Cash And Cash Equivalents'] + pre
     print(f"Enterprise Value: {format_large_number(EV)}")
 
     shares_outstanding = income['Basic Average Shares']
-    shares_outstanding = format_large_number(shares_outstanding)
+    shares_outstanding_formatted = format_large_number(shares_outstanding)
     print(" " )
-    print(f"shares outstanding: {shares_outstanding}") 
+    print(f"shares outstanding: {shares_outstanding_formatted}") 
     print(" " )
-    netdebtpershare = (data['balanceSheet'][0]['Total Debt'] - data['balanceSheet'][0]['Cash And Cash Equivalents']) / income['Basic Average Shares']
+    netdebtpershare = (total_debt - latest_balance_sheet['Cash And Cash Equivalents']) / income['Basic Average Shares']
     print(f"Net Debt per Share: {netdebtpershare:.2f}")
     print("=" * 60)
 
@@ -501,6 +441,78 @@ def wacc_calculation(ticker):
     print(" ")
     print("=" * 60)
 
+def generate_excel(ticker, type):
+    with open(f'{ticker}_financials.json', 'r') as file:
+            data = json.load(file)
+
+    income_statement = data['incomeStatement'][0]
+    cash_flow_statement = data['cashFlowStatement'][0]
+    balance_sheet = data['balanceSheet'][0]
+
+    wb = openpyxl.load_workbook('template.xlsx')
+    ws = wb.active
+        
+    debt = balance_sheet['Total Debt']
+    cash = balance_sheet['Cash And Cash Equivalents']
+    shares = income_statement['Basic Average Shares']
+
+    ws["U17"] = debt/1000000
+    ws["U15"] = cash/1000000
+    ws["U21"] = shares/1000000
+
+    rev = income_statement['Total Revenue']
+    cogs = income_statement['Cost Of Revenue']
+    operating_expense = income_statement['Operating Expense']
+    other_expense = income_statement['Net Interest Income']
+    tax = income_statement['Tax Provision']
+
+    # Use .get() method with default value of 0 to handle None or missing keys
+    div = income_statement.get("Preferred Stock Dividends", 0) or 0
+    div += income_statement.get('Otherunder Preferred Stock Dividend', 0) or 0
+
+    ws["C2"] = rev/1000000
+    ws["C4"] = cogs/1000000
+    ws["C10"] = operating_expense/1000000
+    ws["C16"] = other_expense/1000000
+    ws["C21"] = tax/1000000
+    ws["C25"] = div/1000000
+
+    lis = wacc_no_print(ticker)    
+    wacc = lis[0]
+    cost_of_equity = lis[1]
+    cost_of_debt = lis[2]
+    weight_of_equity = lis[3]
+    weight_of_debt = lis[4]
+
+    ws["U10"] = wacc/100
+    ws["U8"] = weight_of_equity
+    ws["U6"] = weight_of_debt
+    ws["U2"] = cost_of_equity/100
+    ws["U4"] = cost_of_debt/100
+
+    ws["L6"] = cash_flow_statement['Change In Working Capital']/1000000
+    ws["L10"] = cash_flow_statement['Capital Expenditure']/1000000
+
+    ws["L12"] = cash_flow_statement['Free Cash Flow']/1000000 - div/1000000
+
+    ws["L4"] = cash_flow_statement['Operating Cash Flow']/1000000 - cash_flow_statement['Change In Working Capital']/1000000 - income_statement['Net Income']/1000000
+
+    ws["Q16"] = discount_factor(wacc/100, 5)
+    ws["P16"] = discount_factor(wacc/100, 4)
+    ws["O16"] = discount_factor(wacc/100, 3)
+    ws["N16"] = discount_factor(wacc/100, 2)
+    ws["M16"] = discount_factor(wacc/100, 1)
+
+    # Save the workbook    
+    wb.save(f'{ticker}_financial_model.xlsx')
+    
+    
+    if(type == "expectation"):
+        pass
+
+def discount_factor(rate, period):
+    return 1 / ((1 + rate) ** period)
+
 def wacc_no_print(ticker):
     global yield_10y
     yield_10y = get_10y_treasury_yield()
@@ -547,7 +559,9 @@ def wacc_no_print(ticker):
     
     WACC = (float(weight_of_equity) * cost_of_equity) + (float(weight_of_debt) * cost_of_debt * (1 - tax_rate))
 
-    return WACC
+    lis = [WACC, cost_of_equity, cost_of_debt, weight_of_equity, weight_of_debt]
+
+    return lis
 
 def main(command):
     
@@ -625,14 +639,21 @@ def ce(
     compare(ticker)
 
 @app.command()
-def exp(
-    ticker: str = typer.Argument(..., help="Ticker symbol of the company")
+def excel(
+    ticker: str = typer.Argument(..., help="Ticker symbol of the company"),
+    type: str = typer.Option(..., "--type", "-t", help="Type of Excel to generate")
 ):
-    '''Calculate growth expectations to justify current price for the given ticker'''
-    WACC = wacc_no_print(ticker)
-    calculate_expectations(WACC, ticker)
-
-
+    """
+    Generate an Excel file with financial data for the given ticker.
+    """
+    typer.echo(f"Generating {type} Excel file for ticker: {ticker}")
+    if(type == "d"):
+        generate_excel(ticker, "default")
+    
+    elif(type == "expectation"):
+        generate_excel(ticker, "expectation")
+    else:
+        typer.echo("Invalid type specified. Use 'default' or 'expectation'.")
 
 if __name__ == "__main__":
     app()
