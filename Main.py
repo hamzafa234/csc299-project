@@ -11,7 +11,7 @@ from typing import Optional
 app = typer.Typer()
 
 client = OpenAI(
-  api_key="xxxxxx"
+  api_key="XXXXXX"
 )
 
 class FinancialDataFetcher:
@@ -407,21 +407,41 @@ def capital_structure_summary(ticker):
     latest_balance_sheet = data['balanceSheet'][0]
     income = data['incomeStatement'][0]
 
+    total_debt = format_large_number(total_debt)
+
     print("=" * 60)
     print(" ")
     print("Capital Structure Summary")
     print(" ")
-    print(f"Market Capitalization: {cap}")
-    print(f"\033[31mTotal Debt: {total_debt}\033[0m")
-    print(f"\033[32mCash and Cash Equivalents: {latest_balance_sheet['Cash And Cash Equivalents']}\033[0m")
-    EV = cap + total_debt - latest_balance_sheet['Cash And Cash Equivalents']
-    print(f"Enterprise Value: {EV}")
+    print(f"Market Capitalization: {format_large_number(cap)}")
 
+    if(data['balanceSheet'][0]['Preferred Stock Equity'] != None):
+        preferred = data['balanceSheet'][0]['Preferred Stock Equity']
+        pre = data['balanceSheet'][0]['Preferred Stock Equity']
+        preferred = format_large_number(preferred)
+        print(f"Preferred Stock Equity: {preferred}")
+    else: 
+        preferred = 0
+        
+    
+    print(f"\033[31mTotal Debt: {total_debt}\033[0m")
+
+    cash = latest_balance_sheet['Cash And Cash Equivalents']
+    cash = format_large_number(cash)
+
+    print(f"Cash And Cash Equivalents: {cash}")
+    print(" ")
+     
+    EV = stock.info.get('marketCap', None) + data['balanceSheet'][0]['Total Debt'] - data['balanceSheet'][0]['Cash And Cash Equivalents'] + pre
+    print(f"Enterprise Value: {format_large_number(EV)}")
+
+    shares_outstanding = income['Basic Average Shares']
+    shares_outstanding = format_large_number(shares_outstanding)
     print(" " )
-    print(f"shares outstanding: {income['Basic Average Shares']}") 
-    netdebtpershare = (total_debt - latest_balance_sheet['Cash And Cash Equivalents']) / income['Basic Average Shares'] 
+    print(f"shares outstanding: {shares_outstanding}") 
+    print(" " )
+    netdebtpershare = (data['balanceSheet'][0]['Total Debt'] - data['balanceSheet'][0]['Cash And Cash Equivalents']) / income['Basic Average Shares']
     print(f"Net Debt per Share: {netdebtpershare:.2f}")
-    print(" " )
     print("=" * 60)
 
 
