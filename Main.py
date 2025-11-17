@@ -14,7 +14,7 @@ from openpyxl.utils import get_column_letter
 app = typer.Typer()
 
 client = OpenAI(
-  api_key="xxxxxxx"
+  api_key="xxxxxx"
 )
 
 class FinancialDataFetcher:
@@ -441,6 +441,28 @@ def wacc_calculation(ticker):
     print(" ")
     print("=" * 60)
 
+def calculate_growth_rate(terminal_value, last_fcf, wacc):
+    """
+    Calculate the implied perpetual growth rate from terminal value.
+    
+    Formula: Terminal Value = FCF × (1 + g) / (WACC - g)
+    Solving for g: g = (TV × WACC - FCF) / (TV + FCF)
+    
+    Args:
+        terminal_value: Terminal value
+        last_fcf: Free cash flow in the last projection year
+        wacc: Weighted average cost of capital (as decimal, e.g., 0.1177 for 11.77%)
+    
+    Returns:
+        Growth rate as a decimal
+    """
+    # Rearranged formula: g = (TV × WACC - FCF) / (TV + FCF)
+    numerator = (terminal_value * wacc) - last_fcf
+    denominator = terminal_value + last_fcf
+    growth_rate = numerator / denominator
+    
+    return growth_rate
+
 def generate_excel(ticker, type):
     with open(f'{ticker}_financials.json', 'r') as file:
             data = json.load(file)
@@ -593,7 +615,7 @@ def generate_excel(ticker, type):
         ws["Q11"] = yearfive
 
         # subtracting too much need to account for quaters that have already happened
-        TV = (marketcap/1000000) - (ws["M18"].value + ws["N18"].value + ws["O18"].value + ws["P18"].value + ws["Q18"].value)
+        TV = (marketcap/1000000) - (ws["M18"].value + ws["N18"].value + ws["O18"].value + ws["P18"].value + ws["Q18"].value) - balance_sheet['Cash And Cash Equivalents']/1000000 + balance_sheet['Total Debt']/1000000
         ws["Q20"] = TV
 
         TTV = TV 
@@ -601,8 +623,8 @@ def generate_excel(ticker, type):
         TV = TV*(1 + wacc/100)**5
 
         ws["K24"] = TV
-
-        g = 0
+        
+        g = calculate_growth_rate(TV*1000000, fcf, wacc/100)
 
         ws["J25"] = g
 
