@@ -14,7 +14,7 @@ from openpyxl.utils import get_column_letter
 app = typer.Typer()
 
 client = OpenAI(
-  api_key="xxxxxx"
+  api_key="xxxxxxxx"
 )
 
 class FinancialDataFetcher:
@@ -562,6 +562,13 @@ def generate_excel(ticker, type):
         ws["M7"] = yearone
         ws["M11"] = yearone
 
+        ws["D3"].number_format = '0.00'
+        ws["D5"].number_format = '0.00'
+        ws["D11"].number_format = '0.00'
+        ws["M5"].number_format = '0.00'
+        ws["M7"].number_format = '0.00'
+        ws["M11"].number_format = '0.00'
+
         fcf = fcf * yearone 
 
         ws["N18"] = (fcf * ws["N16"].value)/1000000
@@ -575,6 +582,13 @@ def generate_excel(ticker, type):
         ws["N5"] = yeartwo
         ws["N7"] = yeartwo
         ws["N11"] = yeartwo
+
+        ws["E3"].number_format = '0.00'
+        ws["E5"].number_format = '0.00'
+        ws["E11"].number_format = '0.00'
+        ws["N5"].number_format = '0.00'
+        ws["N7"].number_format = '0.00'
+        ws["N11"].number_format = '0.00'
 
         fcf = fcf * yeartwo
 
@@ -590,6 +604,13 @@ def generate_excel(ticker, type):
         ws["O7"] = yearthree
         ws["O11"] = yearthree
 
+        ws["F3"].number_format = '0.00'
+        ws["F5"].number_format = '0.00'
+        ws["F11"].number_format = '0.00'
+        ws["O5"].number_format = '0.00'
+        ws["O7"].number_format = '0.00'
+        ws["O11"].number_format = '0.00'
+
         fcf = fcf * yearthree
         ws["P18"] = (fcf * ws["P16"].value)/1000000
         cap = cap * (1 + wacc/100)
@@ -602,6 +623,13 @@ def generate_excel(ticker, type):
         ws["P7"] = yearfour
         ws["P11"] = yearfour
 
+        ws["P11"].number_format = '0.00'
+        ws["G3"].number_format = '0.00'
+        ws["G5"].number_format = '0.00'
+        ws["G11"].number_format = '0.00'
+        ws["P5"].number_format = '0.00'
+        ws["P7"].number_format = '0.00'
+
         fcf = fcf * yearfour
         ws["Q18"] = (fcf * ws["Q16"].value)/1000000
         cap = cap * (1 + wacc/100)
@@ -613,6 +641,13 @@ def generate_excel(ticker, type):
         ws["Q5"] = yearfive
         ws["Q7"] = yearfive
         ws["Q11"] = yearfive
+
+        ws["H3"].number_format = '0.00'
+        ws["H5"].number_format = '0.00'
+        ws["H11"].number_format = '0.00'
+        ws["Q5"].number_format = '0.00'
+        ws["Q7"].number_format = '0.00'
+        ws["Q11"].number_format = '0.00'
 
         # subtracting too much need to account for quaters that have already happened
         TV = (marketcap/1000000) - (ws["M18"].value + ws["N18"].value + ws["O18"].value + ws["P18"].value + ws["Q18"].value) - balance_sheet['Cash And Cash Equivalents']/1000000 + balance_sheet['Total Debt']/1000000
