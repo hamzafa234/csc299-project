@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 import yfinance as yf
 from datetime import datetime
@@ -14,7 +15,7 @@ from openpyxl.utils import get_column_letter
 app = typer.Typer()
 
 client = OpenAI(
-  api_key="xxxxxxxx"
+  api_key="xxxxxxxxx"
 )
 
 class FinancialDataFetcher:
@@ -121,6 +122,26 @@ class FinancialDataFetcher:
         except Exception as e:
             print(f"Error saving to JSON: {e}")
             return False
+
+def get_10y_treasury_yield_90_days_ago():
+    """
+    Fetches the 10-Year US Treasury yield (^TNX) from 90 days ago.
+    Returns the yield as a float (in percent).
+    """
+    ticker = yf.Ticker("^TNX")
+    data = ticker.history(period="6mo")
+    
+    if data.empty:
+        raise ValueError("No data returned for ^TNX.")
+    
+    if len(data) < 90:
+        raise ValueError("Not enough historical data available.")
+    
+    # Get the yield from approximately 90 trading days ago
+    # (90 calendar days ≈ 60-65 trading days)
+    yield_90_days_ago = data["Close"].iloc[-65]  # Adjust index as needed
+    
+    return yield_90_days_ago
 
 def get_10y_treasury_yield():
     """
@@ -719,6 +740,7 @@ def wacc_no_print(ticker):
 
     return lis
 
+
 def main(command):
     
     #command = sys.argv[1].lower() 
@@ -757,7 +779,6 @@ def load(
 ):
     '''Fetch and save financial data for the given ticker (must be run before other commands)'''
     main(ticker)
-
 
 @app.command()
 def wac (
@@ -810,6 +831,172 @@ def excel(
         generate_excel(ticker, "expectation")
     else:
         typer.echo("Invalid type specified. Use 'default' or 'expectation'.")
+
+filename = 'tasks.json'
+
+def load_tasks():
+    """Load tasks from JSON file"""
+    if os.path.exists(filename):
+        with open(filename, 'r') as f:
+            return json.load(f)
+    return []
+
+def save_tasks(tasks):
+    """Save tasks to JSON file"""
+    with open(filename, 'w') as f:
+        json.dump(tasks, f, indent=2)
+
+@app.command()
+def add(description: str = typer.Argument(..., help="Task description")):
+    """Add a new task"""
+    tasks = load_tasks()
+    task = {
+        'id': max([t['id'] for t in tasks], default=0) + 1,
+        'description': description,
+        'completed': False,
+        'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    }
+    tasks.append(task)
+    save_tasks(tasks)
+    typer.secho(f"✓ Task added successfully (ID: {task['id']})", fg=typer.colors.GREEN)
+
+@app.command()
+def remove(task_id: int = typer.Argument(..., help="ID of task to remove")):
+    """Remove a task by ID"""
+    tasks = load_tasks()
+    task = next((t for t in tasks if t['id'] == task_id), None)
+    
+    if task:
+        tasks.remove(task)
+        save_tasks(tasks)
+        typer.secho(f"✓ Task {task_id} removed successfully", fg=typer.colors.GREEN)
+    else:
+        typer.secho(f"✗ Task with ID {task_id} not found", fg=typer.colors.RED)
+        raise typer.Exit(1)
+
+@app.command()
+def complete(task_id: int = typer.Argument(..., help="ID of task to mark as completed")):
+    """Mark a task as completed"""
+    tasks = load_tasks()
+    task = next((t for t in tasks if t['id'] == task_id), None)
+    
+    if task:
+        if task['completed']:
+            typer.secho(f"Task {task_id} is already completed", fg=typer.colors.YELLOW)
+        else:
+            task['completed'] = True
+            task['completed_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            save_tasks(tasks)
+            typer.secho(f"✓ Task {task_id} marked as completed", fg=typer.colors.GREEN)
+    else:
+        typer.secho(f"✗ Task with ID {task_id} not found", fg=typer.colors.RED)
+        raise typer.Exit(1)
+
+@app.command()
+def list(
+    all: bool = typer.Option(False, "--all", "-a", help="Show all tasks including completed"),
+    completed_only: bool = typer.Option(False, "--completed", "-c", help="Show only completed tasks")
+):
+    """List all tasks"""
+    tasks = load_tasks()
+    
+    if not tasks:
+        typer.secho("No tasks found", fg=typer.colors.YELLOW)
+        return
+    
+    # Filter tasks based on options
+    if completed_only:
+        tasks = [t for t in tasks if t['completed']]
+        header = "COMPLETED TASKS"
+    elif not all:
+        tasks = [t for t in tasks if not t['completed']]
+        header = "PENDING TASKS"
+    else:
+        header = "ALL TASKS"
+    
+    if not tasks:
+        typer.secho(f"No tasks to display", fg=typer.colors.YELLOW)
+        return
+    
+    typer.echo("\n" + "="*60)
+    typer.secho(header, fg=typer.colors.CYAN, bold=True)
+    typer.echo("="*60)
+    
+    for task in tasks:
+        status = "✓" if task['completed'] else "○"
+        color = typer.colors.GREEN if task['completed'] else typer.colors.WHITE
+        typer.secho(f"{status} ID: {task['id']} | {task['description']}", fg=color)
+        typer.echo(f"  Created: {task['created_at']}")
+        if task['completed']:
+            typer.echo(f"  Completed: {task.get('completed_at', 'N/A')}")
+        typer.echo("-"*60)
+
+@app.command()
+def search(keyword: str = typer.Argument(..., help="Keyword to search for in task descriptions")):
+    """Search tasks by keyword"""
+    tasks = load_tasks()
+    
+    if not tasks:
+        typer.secho("No tasks to search", fg=typer.colors.YELLOW)
+        return
+    
+    matches = [t for t in tasks if keyword.lower() in t['description'].lower()]
+    
+    if not matches:
+        typer.secho(f"No tasks found matching '{keyword}'", fg=typer.colors.YELLOW)
+        return
+    
+    typer.echo("\n" + "="*60)
+    typer.secho(f"SEARCH RESULTS FOR: '{keyword}'", fg=typer.colors.CYAN, bold=True)
+    typer.echo("="*60)
+    
+    for task in matches:
+        status = "✓" if task['completed'] else "○"
+        color = typer.colors.GREEN if task['completed'] else typer.colors.WHITE
+        typer.secho(f"{status} ID: {task['id']} | {task['description']}", fg=color)
+        typer.echo(f"  Created: {task['created_at']}")
+        if task['completed']:
+            typer.echo(f"  Completed: {task.get('completed_at', 'N/A')}")
+        typer.echo("-"*60)
+    
+    typer.secho(f"\nFound {len(matches)} task(s)", fg=typer.colors.CYAN)
+
+@app.command()
+def clear(
+    completed: bool = typer.Option(False, "--completed", "-c", help="Clear only completed tasks"),
+    force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation prompt")
+):
+    """Clear all tasks or only completed tasks"""
+    tasks = load_tasks()
+    
+    if not tasks:
+        typer.secho("No tasks to clear", fg=typer.colors.YELLOW)
+        return
+    
+    if completed:
+        tasks_to_clear = [t for t in tasks if t['completed']]
+        message = f"clear {len(tasks_to_clear)} completed task(s)"
+    else:
+        tasks_to_clear = tasks
+        message = f"clear ALL {len(tasks)} task(s)"
+    
+    if not tasks_to_clear:
+        typer.secho("No tasks to clear", fg=typer.colors.YELLOW)
+        return
+    
+    if not force:
+        confirm = typer.confirm(f"Are you sure you want to {message}?")
+        if not confirm:
+            typer.secho("Operation cancelled", fg=typer.colors.YELLOW)
+            return
+    
+    if completed:
+        remaining_tasks = [t for t in tasks if not t['completed']]
+        save_tasks(remaining_tasks)
+        typer.secho(f"✓ Cleared {len(tasks_to_clear)} completed task(s)", fg=typer.colors.GREEN)
+    else:
+        save_tasks([])
+        typer.secho("✓ All tasks cleared", fg=typer.colors.GREEN)
 
 if __name__ == "__main__":
     app()
