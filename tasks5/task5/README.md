@@ -43,45 +43,45 @@ pip install -r requirements-dev.txt
 
 **Add a task:**
 ```bash
-python -m src.main add "Complete project documentation"
-python -m src.main add "Review code" --priority high
+python3 -m src.main add "Complete project documentation"
+python3 -m src.main add "Review code" --priority high
 ```
 
 **List all tasks:**
 ```bash
-python -m src.main list
+python3 -m src.main list
 ```
 
 **Mark task as complete:**
 ```bash
-python -m src.main complete <task-id>
+python3 -m src.main complete <task-id>
 ```
 
 **Mark task as incomplete:**
 ```bash
-python -m src.main uncomplete <task-id>
+python3 -m src.main uncomplete <task-id>
 ```
 
 **Remove a task:**
 ```bash
-python -m src.main remove <task-id>
-python -m src.main remove <task-id> --force  # Skip confirmation
+python3 -m src.main remove <task-id>
+python3 -m src.main remove <task-id> --force  # Skip confirmation
 ```
 
 **Set task priority:**
 ```bash
-python -m src.main priority <task-id> high
+python3 -m src.main priority <task-id> high
 ```
 
 **Search tasks:**
 ```bash
-python -m src.main search keyword1 keyword2
-python -m src.main search "exact phrase" --case-sensitive
+python3 -m src.main search keyword1 keyword2
+python3 -m src.main search "exact phrase" --case-sensitive
 ```
 
 **Show task details:**
 ```bash
-python -m src.main show <task-id>
+python3 -m src.main show <task-id>
 ```
 
 ### Global Options
