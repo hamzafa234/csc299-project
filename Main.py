@@ -15,7 +15,7 @@ from openpyxl.utils import get_column_letter
 app = typer.Typer()
 
 client = OpenAI(
-  api_key="xxxxxxxxx"
+  api_key="xxxxxxxx"
 )
 
 class FinancialDataFetcher:
@@ -122,26 +122,6 @@ class FinancialDataFetcher:
         except Exception as e:
             print(f"Error saving to JSON: {e}")
             return False
-
-def get_10y_treasury_yield_90_days_ago():
-    """
-    Fetches the 10-Year US Treasury yield (^TNX) from 90 days ago.
-    Returns the yield as a float (in percent).
-    """
-    ticker = yf.Ticker("^TNX")
-    data = ticker.history(period="6mo")
-    
-    if data.empty:
-        raise ValueError("No data returned for ^TNX.")
-    
-    if len(data) < 90:
-        raise ValueError("Not enough historical data available.")
-    
-    # Get the yield from approximately 90 trading days ago
-    # (90 calendar days ≈ 60-65 trading days)
-    yield_90_days_ago = data["Close"].iloc[-65]  # Adjust index as needed
-    
-    return yield_90_days_ago
 
 def get_10y_treasury_yield():
     """
@@ -463,20 +443,6 @@ def wacc_calculation(ticker):
     print("=" * 60)
 
 def calculate_growth_rate(terminal_value, last_fcf, wacc):
-    """
-    Calculate the implied perpetual growth rate from terminal value.
-    
-    Formula: Terminal Value = FCF × (1 + g) / (WACC - g)
-    Solving for g: g = (TV × WACC - FCF) / (TV + FCF)
-    
-    Args:
-        terminal_value: Terminal value
-        last_fcf: Free cash flow in the last projection year
-        wacc: Weighted average cost of capital (as decimal, e.g., 0.1177 for 11.77%)
-    
-    Returns:
-        Growth rate as a decimal
-    """
     # Rearranged formula: g = (TV × WACC - FCF) / (TV + FCF)
     numerator = (terminal_value * wacc) - last_fcf
     denominator = terminal_value + last_fcf
@@ -773,8 +739,13 @@ def main(command):
         print("\n✗ Failed to fetch and save financial data.")
         print("Please check that the ticker symbol is valid and try again.")
 
+app = typer.Typer()
+
+# Global state file to track current ticker
+STATE_FILE = ".current_ticker.json"
+
 @app.command()
-def load(
+def lad(
     ticker: str = typer.Argument(..., help="Ticker symbol of the company")
 ):
     '''Fetch and save financial data for the given ticker (must be run before other commands)'''
@@ -816,7 +787,7 @@ def ce(
     compare(ticker)
 
 @app.command()
-def excel(
+def exl(
     ticker: str = typer.Argument(..., help="Ticker symbol of the company"),
     type: str = typer.Option(..., "--type", "-t", help="Type of Excel to generate")
 ):
@@ -832,24 +803,87 @@ def excel(
     else:
         typer.echo("Invalid type specified. Use 'default' or 'expectation'.")
 
-filename = 'tasks.json'
+def get_current_ticker():
+    """Get the currently active ticker"""
+    if os.path.exists(STATE_FILE):
+        with open(STATE_FILE, 'r') as f:
+            data = json.load(f)
+            return data.get('ticker')
+    return None
 
-def load_tasks():
+def set_current_ticker(ticker):
+    """Set the currently active ticker"""
+    with open(STATE_FILE, 'w') as f:
+        json.dump({'ticker': ticker}, f)
+
+def get_filename(ticker=None):
+    """Get the filename for a given ticker or current ticker"""
+    if ticker is None:
+        ticker = get_current_ticker()
+        if ticker is None:
+            typer.secho("✗ No active ticker. Run 'bg <ticker>' first.", fg=typer.colors.RED)
+            raise typer.Exit(1)
+    return f"{ticker}_notes.json"
+
+@app.command()
+def bg(
+    ticker: str = typer.Argument(..., help="Ticker symbol of the company")
+):
+    '''Start the process for researching a business given its ticker'''
+    
+    filename = get_filename(ticker)
+    
+    # Set this as the current ticker
+    set_current_ticker(ticker)
+    
+    tasks = load_tasks(filename)
+    
+    # Define initial tasks
+    initial_tasks = [
+        "Examine default risk",
+        "Examine big three financial statements",
+        "Read form 10-K and 10-Q filings",
+        "Perform ratio analysis",
+        "Examine expectations",
+        "Examine past guidance vs actual performance",
+        "Examine competitors"
+    ]
+    
+    # Add all initial tasks
+    for description in initial_tasks:
+        task = {
+            'id': max([t['id'] for t in tasks], default=0) + 1,
+            'description': description,
+            'completed': False,
+            'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+        tasks.append(task)
+    
+    save_tasks(tasks, filename)
+    typer.secho(f"✓ Created research project for {ticker.upper()} with {len(initial_tasks)} tasks", fg=typer.colors.GREEN)
+    typer.secho(f"  File: {filename}", fg=typer.colors.CYAN)
+
+def load_tasks(filename):
     """Load tasks from JSON file"""
     if os.path.exists(filename):
         with open(filename, 'r') as f:
             return json.load(f)
     return []
 
-def save_tasks(tasks):
+def save_tasks(tasks, filename):
     """Save tasks to JSON file"""
     with open(filename, 'w') as f:
         json.dump(tasks, f, indent=2)
 
 @app.command()
-def add(description: str = typer.Argument(..., help="Task description")):
+def add(
+    description: str = typer.Argument(..., help="Task description"),
+    ticker: str = typer.Option(None, "--ticker", "-t", help="Ticker symbol (uses current if not specified)")
+):
     """Add a new task"""
-    tasks = load_tasks()
+    filename = get_filename(ticker)
+    tasks = load_tasks(filename)
+    
     task = {
         'id': max([t['id'] for t in tasks], default=0) + 1,
         'description': description,
@@ -857,27 +891,35 @@ def add(description: str = typer.Argument(..., help="Task description")):
         'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     }
     tasks.append(task)
-    save_tasks(tasks)
+    save_tasks(tasks, filename)
     typer.secho(f"✓ Task added successfully (ID: {task['id']})", fg=typer.colors.GREEN)
 
 @app.command()
-def remove(task_id: int = typer.Argument(..., help="ID of task to remove")):
+def rm(
+    task_id: int = typer.Argument(..., help="ID of task to remove"),
+    ticker: str = typer.Option(None, "--ticker", "-t", help="Ticker symbol (uses current if not specified)")
+):
     """Remove a task by ID"""
-    tasks = load_tasks()
+    filename = get_filename(ticker)
+    tasks = load_tasks(filename)
     task = next((t for t in tasks if t['id'] == task_id), None)
     
     if task:
         tasks.remove(task)
-        save_tasks(tasks)
+        save_tasks(tasks, filename)
         typer.secho(f"✓ Task {task_id} removed successfully", fg=typer.colors.GREEN)
     else:
         typer.secho(f"✗ Task with ID {task_id} not found", fg=typer.colors.RED)
         raise typer.Exit(1)
 
 @app.command()
-def complete(task_id: int = typer.Argument(..., help="ID of task to mark as completed")):
+def com(
+    task_id: int = typer.Argument(..., help="ID of task to mark as completed"),
+    ticker: str = typer.Option(None, "--ticker", "-t", help="Ticker symbol (uses current if not specified)")
+):
     """Mark a task as completed"""
-    tasks = load_tasks()
+    filename = get_filename(ticker)
+    tasks = load_tasks(filename)
     task = next((t for t in tasks if t['id'] == task_id), None)
     
     if task:
@@ -886,19 +928,21 @@ def complete(task_id: int = typer.Argument(..., help="ID of task to mark as comp
         else:
             task['completed'] = True
             task['completed_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            save_tasks(tasks)
+            save_tasks(tasks, filename)
             typer.secho(f"✓ Task {task_id} marked as completed", fg=typer.colors.GREEN)
     else:
         typer.secho(f"✗ Task with ID {task_id} not found", fg=typer.colors.RED)
         raise typer.Exit(1)
 
 @app.command()
-def list(
+def lis(
     all: bool = typer.Option(False, "--all", "-a", help="Show all tasks including completed"),
-    completed_only: bool = typer.Option(False, "--completed", "-c", help="Show only completed tasks")
+    completed_only: bool = typer.Option(False, "--completed", "-c", help="Show only completed tasks"),
+    ticker: str = typer.Option(None, "--ticker", "-t", help="Ticker symbol (uses current if not specified)")
 ):
     """List all tasks"""
-    tasks = load_tasks()
+    filename = get_filename(ticker)
+    tasks = load_tasks(filename)
     
     if not tasks:
         typer.secho("No tasks found", fg=typer.colors.YELLOW)
@@ -918,8 +962,10 @@ def list(
         typer.secho(f"No tasks to display", fg=typer.colors.YELLOW)
         return
     
+    # Show current ticker
+    current = get_current_ticker()
     typer.echo("\n" + "="*60)
-    typer.secho(header, fg=typer.colors.CYAN, bold=True)
+    typer.secho(f"{header} - {current.upper()}", fg=typer.colors.CYAN, bold=True)
     typer.echo("="*60)
     
     for task in tasks:
@@ -932,9 +978,13 @@ def list(
         typer.echo("-"*60)
 
 @app.command()
-def search(keyword: str = typer.Argument(..., help="Keyword to search for in task descriptions")):
+def ser(
+    keyword: str = typer.Argument(..., help="Keyword to search for in task descriptions"),
+    ticker: str = typer.Option(None, "--ticker", "-t", help="Ticker symbol (uses current if not specified)")
+):
     """Search tasks by keyword"""
-    tasks = load_tasks()
+    filename = get_filename(ticker)
+    tasks = load_tasks(filename)
     
     if not tasks:
         typer.secho("No tasks to search", fg=typer.colors.YELLOW)
@@ -962,12 +1012,14 @@ def search(keyword: str = typer.Argument(..., help="Keyword to search for in tas
     typer.secho(f"\nFound {len(matches)} task(s)", fg=typer.colors.CYAN)
 
 @app.command()
-def clear(
+def cl(
     completed: bool = typer.Option(False, "--completed", "-c", help="Clear only completed tasks"),
-    force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation prompt")
+    force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation prompt"),
+    ticker: str = typer.Option(None, "--ticker", "-t", help="Ticker symbol (uses current if not specified)")
 ):
     """Clear all tasks or only completed tasks"""
-    tasks = load_tasks()
+    filename = get_filename(ticker)
+    tasks = load_tasks(filename)
     
     if not tasks:
         typer.secho("No tasks to clear", fg=typer.colors.YELLOW)
@@ -992,11 +1044,32 @@ def clear(
     
     if completed:
         remaining_tasks = [t for t in tasks if not t['completed']]
-        save_tasks(remaining_tasks)
+        save_tasks(remaining_tasks, filename)
         typer.secho(f"✓ Cleared {len(tasks_to_clear)} completed task(s)", fg=typer.colors.GREEN)
     else:
-        save_tasks([])
+        save_tasks([], filename)
         typer.secho("✓ All tasks cleared", fg=typer.colors.GREEN)
+
+@app.command()
+def cur():
+    """Show the current active ticker"""
+    ticker = get_current_ticker()
+    if ticker:
+        typer.secho(f"Current ticker: {ticker.upper()}", fg=typer.colors.CYAN)
+    else:
+        typer.secho("No active ticker set. Run 'bg <ticker>' to start.", fg=typer.colors.YELLOW)
+
+@app.command()
+def sw(ticker: str = typer.Argument(..., help="Ticker symbol to switch to")):
+    """Switch to a different ticker project"""
+    filename = get_filename(ticker)
+    
+    if not os.path.exists(filename):
+        typer.secho(f"✗ No project found for {ticker.upper()}. Run 'bg {ticker}' to create it.", fg=typer.colors.RED)
+        raise typer.Exit(1)
+    
+    set_current_ticker(ticker)
+    typer.secho(f"✓ Switched to {ticker.upper()}", fg=typer.colors.GREEN)
 
 if __name__ == "__main__":
     app()
