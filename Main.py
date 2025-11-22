@@ -442,6 +442,28 @@ def wacc_calculation(ticker):
     print(" ")
     print("=" * 60)
 
+def notes(ticker):
+    response = client.responses.create(
+        model="gpt-5-nano",
+        tools=[{"type": "web_search"}],
+        input="Give a summary of what" + ticker + "does. Do not ask any follow up questions. Return a concise summary in 225 words or less. Do not return any text other than the summary. do not return a link ever. Make sure to return bullet points",
+        store=True,
+    )
+
+    # Create markdown filename based on ticker
+    filename = f"{ticker}_summary.md"
+    
+    # Write content to markdown file
+    with open(filename, 'w') as f:
+        f.write(f"# {ticker} Summary\n\n")
+        f.write(response.output_text)
+    
+    print("=" * 60)
+    print(" ")
+    print(f"Company Summary saved to {filename}")
+    print(" ")
+    print("=" * 60)
+
 def calculate_growth_rate(terminal_value, last_fcf, wacc):
     # Rearranged formula: g = (TV × WACC - FCF) / (TV + FCF)
     numerator = (terminal_value * wacc) - last_fcf
@@ -1070,6 +1092,13 @@ def sw(ticker: str = typer.Argument(..., help="Ticker symbol to switch to")):
     
     set_current_ticker(ticker)
     typer.secho(f"✓ Switched to {ticker.upper()}", fg=typer.colors.GREEN)
+
+@app.command()
+def nt(
+    ticker: str = typer.Argument(..., help="Ticker symbol of the company"),
+):
+    '''Display earnings call summary for the given ticker and date'''
+    notes(ticker)
 
 if __name__ == "__main__":
     app()
