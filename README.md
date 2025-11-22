@@ -1,6 +1,4 @@
-The goal of this project is to build an equity research terminal that has some of the same functions as a Bloomberg terminal. 
-
-- How to use the program 
-- Get an API key from OpenAI and paste it into the program
-- Navigate to where you have saved the file using the terminal
-- If you want info on Nvidia corporation, you would type "python3 Main.py NVDA"
+The Goal of this project is to make a finance-focused PKMS. 
+The software will automate certain tasks, such as calculating the WACC, calculating capital structure, etc
+You must have Python 3 and install typer
+You must also have an openAI api key in order to use certain features 
