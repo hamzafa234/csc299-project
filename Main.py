@@ -165,63 +165,6 @@ def get_30y_treasury_yield():
     latest_yield = data["Close"].iloc[-1]
     return latest_yield
 
-def Statements(ticker):
-        with open(f'{ticker}_financials.json', 'r') as file:
-            data = json.load(file)
-
-        income = data['incomeStatement'][0]
-        cash = data['cashFlowStatement'][0]
-        income2 = data['incomeStatement'][1]
-        cash2 = data['cashFlowStatement'][1]
-        income3 = data['incomeStatement'][2]
-        cash3 = data['cashFlowStatement'][2]
-        income4 = data['incomeStatement'][3]
-        cash4 = data['cashFlowStatement'][3]
-
-        print("=" * 60)
-        print(" ")
-        print("Income Statement Summary")
-        print(" ")
-        print(f"Fiscal Year:         {income['date']:>10} | {income2['date']:>10} | {income3['date']:>10} | {income4['date']:>10}")
-        print(" ")
-        print("Income Statement as a Percentage of Revenue:")
-        print(" ")
-        print(f"Total Revenue:       {'100%':>10} | {'100%':>10} | {'100%':>10} | {'100%':>10}")
-        print(f"Cost of Revenue:     {income['Cost Of Revenue'] / income['Total Revenue'] * 100:>9.2f}% | {income2['Cost Of Revenue'] / income2['Total Revenue'] * 100:>9.2f}% | {income3['Cost Of Revenue'] / income3['Total Revenue'] * 100:>9.2f}% | {income4['Cost Of Revenue'] / income4['Total Revenue'] * 100:>9.2f}%")
-        print(f"Gross Profit:        {income['Gross Profit'] / income['Total Revenue'] * 100:>9.2f}% | {income2['Gross Profit'] / income2['Total Revenue'] * 100:>9.2f}% | {income3['Gross Profit'] / income3['Total Revenue'] * 100:>9.2f}% | {income4['Gross Profit'] / income4['Total Revenue'] * 100:>9.2f}%")
-        print(f"Operating Expenses:  {income['Operating Expense'] / income['Total Revenue'] * 100:>9.2f}% | {income2['Operating Expense'] / income2['Total Revenue'] * 100:>9.2f}% | {income3['Operating Expense'] / income3['Total Revenue'] * 100:>9.2f}% | {income4['Operating Expense'] / income4['Total Revenue'] * 100:>9.2f}%")
-        print(f"Operating Income:    {income['Operating Income'] / income['Total Revenue'] * 100:>9.2f}% | {income2['Operating Income'] / income2['Total Revenue'] * 100:>9.2f}% | {income3['Operating Income'] / income3['Total Revenue'] * 100:>9.2f}% | {income4['Operating Income'] / income4['Total Revenue'] * 100:>9.2f}%")
-        print(f"Tax Expense:         {income['Tax Provision'] / income['Total Revenue'] * 100:>9.2f}% | {income2['Tax Provision'] / income2['Total Revenue'] * 100:>9.2f}% | {income3['Tax Provision'] / income3['Total Revenue'] * 100:>9.2f}% | {income4['Tax Provision'] / income4['Total Revenue'] * 100:>9.2f}%")
-        print(f"Net Income:          {income['Net Income'] / income['Total Revenue'] * 100:>9.2f}% | {income2['Net Income'] / income2['Total Revenue'] * 100:>9.2f}% | {income3['Net Income'] / income3['Total Revenue'] * 100:>9.2f}% | {income4['Net Income'] / income4['Total Revenue'] * 100:>9.2f}%")
-        print(" ")
-        print("YOY changes:")
-        print(" ")
-        print(f"Revenue Growth:      {(income['Total Revenue'] - income2['Total Revenue']) / income2['Total Revenue'] * 100:>9.2f}% | {(income2['Total Revenue'] - income3['Total Revenue']) / income3['Total Revenue'] * 100:>9.2f}% | {(income3['Total Revenue'] - income4['Total Revenue']) / income4['Total Revenue'] * 100:>9.2f}%")
-        print(f"Cost of Revenue:     {(income['Cost Of Revenue'] - income2['Cost Of Revenue']) / income2['Cost Of Revenue'] * 100:>9.2f}% | {(income2['Cost Of Revenue'] - income3['Cost Of Revenue']) / income3['Cost Of Revenue'] * 100:>9.2f}% | {(income3['Cost Of Revenue'] - income4['Cost Of Revenue']) / income4['Cost Of Revenue'] * 100:>9.2f}%")
-        print(f"Gross Profit:        {(income['Gross Profit'] - income2['Gross Profit']) / income2['Gross Profit'] * 100:>9.2f}% | {(income2['Gross Profit'] - income3['Gross Profit']) / income3['Gross Profit'] * 100:>9.2f}% | {(income3['Gross Profit'] - income4['Gross Profit']) / income4['Gross Profit'] * 100:>9.2f}%")
-        print(f"Operating Expense:   {(income['Operating Expense'] - income2['Operating Expense']) / income2['Operating Expense'] * 100:>9.2f}% | {(income2['Operating Expense'] - income3['Operating Expense']) / income3['Operating Expense'] * 100:>9.2f}% | {(income3['Operating Expense'] - income4['Operating Expense']) / income4['Operating Expense'] * 100:>9.2f}%")
-        print(f"Operating Income:    {(income['Operating Income'] - income2['Operating Income']) / income2['Operating Income'] * 100:>9.2f}% | {(income2['Operating Income'] - income3['Operating Income']) / income3['Operating Income'] * 100:>9.2f}% | {(income3['Operating Income'] - income4['Operating Income']) / income4['Operating Income'] * 100:>9.2f}%")
-        print(f"Tax Expense:         {(income['Tax Provision'] - income2['Tax Provision']) / income2['Tax Provision'] * 100:>9.2f}% | {(income2['Tax Provision'] - income3['Tax Provision']) / income3['Tax Provision'] * 100:>9.2f}% | {(income3['Tax Provision'] - income4['Tax Provision']) / income4['Tax Provision'] * 100:>9.2f}%")
-        print(f"Net Income Growth:   {(income['Net Income'] - income2['Net Income']) / income2['Net Income'] * 100:>9.2f}% | {(income2['Net Income'] - income3['Net Income']) / income3['Net Income'] * 100:>9.2f}% | {(income3['Net Income'] - income4['Net Income']) / income4['Net Income'] * 100:>9.2f}%")
-        print(" ")
-        print(f"Fiscal Year:             {cash['date']:>10} | {cash2['date']:>10} | {cash3['date']:>10} | {cash4['date']:>10}")
-        print(" ")
-        print("Cash Flow as a Percentage of Revenue:")
-        print(" ")
-        print(f"Operating Cash Flow:     {cash['Operating Cash Flow'] / income['Total Revenue'] * 100:>9.2f}% | {cash2['Operating Cash Flow'] / income2['Total Revenue'] * 100:>9.2f}% | {cash3['Operating Cash Flow'] / income3['Total Revenue'] * 100:>9.2f}% | {cash4['Operating Cash Flow'] / income4['Total Revenue'] * 100:>9.2f}%")
-        print(f"Investing Cash Flow:     {cash['Investing Cash Flow'] / income['Total Revenue'] * 100:>9.2f}% | {cash2['Investing Cash Flow'] / income2['Total Revenue'] * 100:>9.2f}% | {cash3['Investing Cash Flow'] / income3['Total Revenue'] * 100:>9.2f}% | {cash4['Investing Cash Flow'] / income4['Total Revenue'] * 100:>9.2f}%")
-        print(f"Financing Cash Flow:     {cash['Financing Cash Flow'] / income['Total Revenue'] * 100:>9.2f}% | {cash2['Financing Cash Flow'] / income2['Total Revenue'] * 100:>9.2f}% | {cash3['Financing Cash Flow'] / income3['Total Revenue'] * 100:>9.2f}% | {cash4['Financing Cash Flow'] / income4['Total Revenue'] * 100:>9.2f}%")
-        print(f"Free Cash Flow:          {cash['Free Cash Flow'] / income['Total Revenue'] * 100:>9.2f}% | {cash2['Free Cash Flow'] / income2['Total Revenue'] * 100:>9.2f}% | {cash3['Free Cash Flow'] / income3['Total Revenue'] * 100:>9.2f}% | {cash4['Free Cash Flow'] / income4['Total Revenue'] * 100:>9.2f}%")
-        print(" ")
-        print("YOY changes:")
-        print(" ")
-        print(f"Operating Cash Flow:     {(cash['Operating Cash Flow'] - cash2['Operating Cash Flow']) / abs(cash2['Operating Cash Flow']) * 100:>9.2f}% | {(cash2['Operating Cash Flow'] - cash3['Operating Cash Flow']) / abs(cash3['Operating Cash Flow']) * 100:>9.2f}% | {(cash3['Operating Cash Flow'] - cash4['Operating Cash Flow']) / abs(cash4['Operating Cash Flow']) * 100:>9.2f}%")
-        print(f"Investing Cash Flow:     {(cash['Investing Cash Flow'] - cash2['Investing Cash Flow']) / abs(cash2['Investing Cash Flow']) * 100:>9.2f}% | {(cash2['Investing Cash Flow'] - cash3['Investing Cash Flow']) / abs(cash3['Investing Cash Flow']) * 100:>9.2f}% | {(cash3['Investing Cash Flow'] - cash4['Investing Cash Flow']) / abs(cash4['Investing Cash Flow']) * 100:>9.2f}%")
-        print(f"Financing Cash Flow:     {(cash['Financing Cash Flow'] - cash2['Financing Cash Flow']) / abs(cash2['Financing Cash Flow']) * 100:>9.2f}% | {(cash2['Financing Cash Flow'] - cash3['Financing Cash Flow']) / abs(cash3['Financing Cash Flow']) * 100:>9.2f}% | {(cash3['Financing Cash Flow'] - cash4['Financing Cash Flow']) / abs(cash4['Financing Cash Flow']) * 100:>9.2f}%")
-        print(f"Free Cash Flow:          {(cash['Free Cash Flow'] - cash2['Free Cash Flow']) / abs(cash2['Free Cash Flow']) * 100:>9.2f}% | {(cash2['Free Cash Flow'] - cash3['Free Cash Flow']) / abs(cash3['Free Cash Flow']) * 100:>9.2f}% | {(cash3['Free Cash Flow'] - cash4['Free Cash Flow']) / abs(cash4['Free Cash Flow']) * 100:>9.2f}%")
-        print(" ")
-        print("=" * 60)
-
 def credit_spread_analysis(ticker):
     response = client.responses.create(
         model="gpt-5-nano",
@@ -246,19 +189,41 @@ def credit_spread_analysis(ticker):
         treasury_yield = get_10y_treasury_yield()
         tbill = 10
 
+    spread = yeild - treasury_yield
+    
+    filename = f"{ticker}_summary.md"
+    
+    # Check if file exists and read existing content
+    existing_content = ""
+    try:
+        with open(filename, 'r') as f:
+            existing_content = f.read()
+    except FileNotFoundError:
+        pass
+    
+    # Build the credit spread content
+    credit_content = "# Credit Spread Analysis\n\n"
+    credit_content += f"**Bond Maturity Year:** {bond_maturity:.0f}\n\n"
+    credit_content += f"**Market Yield of Debt:** {yeild:.2f}%\n\n"
+    credit_content += f"**{tbill}y Treasury Yield:** {treasury_yield:.2f}%\n\n"
+    credit_content += "---\n\n"
+    credit_content += f"## **Spread to {tbill}y Treasury: {spread:.2f}%**\n\n"
+    
+    if spread < 0:
+        credit_content += "> **Note:** Negative spread indicates debt market has low liquidity for this company's bonds.\n"
+    
+    # Write to file
+    with open(filename, 'w') as f:
+        if existing_content:
+            f.write(existing_content)
+            f.write("\n\n---\n\n")
+            f.write(credit_content)
+        else:
+            f.write(credit_content)
+    
     print("=" * 60)
     print(" ")
-    print("Credit Spread Analysis")
-    print(" ")
-    print(f"Bond Maturity Year: {bond_maturity:.0f}")
-    print(" ")
-    print(f"Market yield of debt: {yeild:.2f}%")
-    print(" ")
-    print(f"{tbill}y Treasury Yield: {treasury_yield:.2f}%")
-    print(" ")
-    print(f"\033[31mSpread to {tbill}y treasury: {yeild - treasury_yield:.2f}%\033[0m")
-    print(" ")
-    print("Negative spread indicates debt market has low liquidity for this companies bonds.")
+    print(f"Credit Spread Analysis saved to {filename}")
     print(" ")
     print("=" * 60)
 
@@ -272,12 +237,20 @@ def compare(ticker):
     comp_data = eval(response.output_text)
     comp_data.append(ticker)
     
-    print("="*60)
-    print(" ")
-    print("Competitor Analysis")
-    print(" ")
-    print(f"{'Ticker':<10} {'Market Cap':>15} {'Enterprise Value':>15} {'Trailing P/E':>15} {'Forward P/E':>15} {'Yield':>15} {'Price to FCF':>15}")
-    print(" ")
+    filename = f"{ticker}_summary.md"
+    
+    # Check if file exists and read existing content
+    existing_content = ""
+    try:
+        with open(filename, 'r') as f:
+            existing_content = f.read()
+    except FileNotFoundError:
+        pass
+    
+    # Build the table content
+    table_content = "# Competitor Analysis\n\n"
+    table_content += "| Ticker | Market Cap | Enterprise Value | Trailing P/E | Forward P/E | Yield | Price to FCF |\n"
+    table_content += "|--------|------------|------------------|--------------|-------------|-------|-------------|\n"
     
     for symbol in comp_data[:6]:
         values = getCompVal(symbol)
@@ -293,8 +266,20 @@ def compare(ticker):
             else:
                 formatted_values.append(str(v))
         
-        print(f"{symbol:<10} {formatted_values[0]:>15} {formatted_values[1]:>15} {formatted_values[2]:>15} {formatted_values[3]:>15} {formatted_values[4]:>15} {formatted_values[5]:>15}")
-
+        table_content += f"| {symbol} | {formatted_values[0]} | {formatted_values[1]} | {formatted_values[2]} | {formatted_values[3]} | {formatted_values[4]} | {formatted_values[5]} |\n"
+    
+    # Write to file
+    with open(filename, 'w') as f:
+        if existing_content:
+            f.write(existing_content)
+            f.write("\n\n---\n\n")
+            f.write(table_content)
+        else:
+            f.write(table_content)
+    
+    print("=" * 60)
+    print(" ")
+    print(f"Competitor Analysis saved to {filename}")
     print(" ")
     print("=" * 60)
 
@@ -338,7 +323,6 @@ def getCompVal(ticker):
     list = [cap, ev, pe, fpe, y, price_to_fcf]
     return list
     
-
 def capital_structure_summary(ticker):
     with open(f'{ticker}_financials.json', 'r') as file:
             data = json.load(file)
@@ -352,39 +336,59 @@ def capital_structure_summary(ticker):
 
     total_debt_formatted = format_large_number(total_debt)
 
-    print("=" * 60)
-    print(" ")
-    print("Capital Structure Summary")
-    print(" ")
-    print(f"Market Capitalization: {format_large_number(cap)}")
-
     # Use .get() method to safely retrieve preferred stock value
     pre = data['balanceSheet'][0].get('Preferred Stock Equity', 0) or 0
-    
-    if pre != 0:
-        preferred_formatted = format_large_number(pre)
-        print(f"Preferred Stock Equity: {preferred_formatted}")
-    
-    print(f"\033[31mTotal Debt: {total_debt_formatted}\033[0m")
 
     cash = latest_balance_sheet['Cash And Cash Equivalents']
     cash_formatted = format_large_number(cash)
-
-    print(f"Cash And Cash Equivalents: {cash_formatted}")
-    print(" ")
      
     EV = stock.info.get('marketCap', None) + total_debt - latest_balance_sheet['Cash And Cash Equivalents'] + pre
-    print(f"Enterprise Value: {format_large_number(EV)}")
 
     shares_outstanding = income['Basic Average Shares']
     shares_outstanding_formatted = format_large_number(shares_outstanding)
-    print(" " )
-    print(f"shares outstanding: {shares_outstanding_formatted}") 
-    print(" " )
+    
     netdebtpershare = (total_debt - latest_balance_sheet['Cash And Cash Equivalents']) / income['Basic Average Shares']
-    print(f"Net Debt per Share: {netdebtpershare:.2f}")
+    
+    filename = f"{ticker}_summary.md"
+    
+    # Check if file exists and read existing content
+    existing_content = ""
+    try:
+        with open(filename, 'r') as f:
+            existing_content = f.read()
+    except FileNotFoundError:
+        pass
+    
+    # Build the capital structure content
+    capital_content = "# Capital Structure Summary\n\n"
+    capital_content += f"**Market Capitalization:** {format_large_number(cap)}\n\n"
+    
+    if pre != 0:
+        preferred_formatted = format_large_number(pre)
+        capital_content += f"**Preferred Stock Equity:** {preferred_formatted}\n\n"
+    
+    capital_content += f"**Total Debt:** {total_debt_formatted}\n\n"
+    capital_content += f"**Cash And Cash Equivalents:** {cash_formatted}\n\n"
+    capital_content += "---\n\n"
+    capital_content += f"**Enterprise Value:** {format_large_number(EV)}\n\n"
+    capital_content += f"**Shares Outstanding:** {shares_outstanding_formatted}\n\n"
+    capital_content += "---\n\n"
+    capital_content += f"## **Net Debt per Share: ${netdebtpershare:.2f}**\n"
+    
+    # Write to file
+    with open(filename, 'w') as f:
+        if existing_content:
+            f.write(existing_content)
+            f.write("\n\n---\n\n")
+            f.write(capital_content)
+        else:
+            f.write(capital_content)
+    
     print("=" * 60)
-
+    print(" ")
+    print(f"Capital Structure Summary saved to {filename}")
+    print(" ")
+    print("=" * 60)
 
 def wacc_calculation(ticker):
     global yield_10y
@@ -411,12 +415,11 @@ def wacc_calculation(ticker):
 
     tax_rate = income["Tax Rate For Calcs"]
 
-
     weight_of_debt = total_debt / (total_debt + cap)
     weight_of_equity = cap / (total_debt + cap)
 
-    weight_of_debt = f"{weight_of_debt:.4f}"
-    weight_of_equity = f"{weight_of_equity:.4f}"
+    weight_of_debt_formatted = f"{weight_of_debt:.4f}"
+    weight_of_equity_formatted = f"{weight_of_equity:.4f}"
 
     if 'Interest Expense' in income:
         interest_expense = income['Interest Expense']
@@ -429,16 +432,47 @@ def wacc_calculation(ticker):
         cost_of_debt = abs(interest_expense / total_debt) * 100
 
     cost_of_equity = yield_10y + beta * ERP
+    
+    WACC = (weight_of_equity * cost_of_equity) + (weight_of_debt * cost_of_debt * (1 - tax_rate))
+    
+    filename = f"{ticker}_summary.md"
+    
+    # Check if file exists and read existing content
+    existing_content = ""
+    try:
+        with open(filename, 'r') as f:
+            existing_content = f.read()
+    except FileNotFoundError:
+        pass
+    
+    # Build the WACC content
+    wacc_content = "# WACC Calculation\n\n"
+    wacc_content += f"**10-Year Treasury Yield:** {yield_10y:.2f}%\n\n"
+    wacc_content += f"**Market Cap:** ${cap:,.0f}\n\n"
+    wacc_content += f"**Beta:** {beta:.2f}\n\n"
+    wacc_content += f"**Equity Risk Premium:** {ERP:.2f}%\n\n"
+    wacc_content += f"**Total Debt:** ${total_debt:,.0f}\n\n"
+    wacc_content += f"**Tax Rate:** {tax_rate:.2%}\n\n"
+    wacc_content += "---\n\n"
+    wacc_content += f"**Weight of Debt:** {weight_of_debt_formatted}\n\n"
+    wacc_content += f"**Weight of Equity:** {weight_of_equity_formatted}\n\n"
+    wacc_content += f"**Cost of Equity:** {cost_of_equity:.2f}%\n\n"
+    wacc_content += f"**Cost of Debt:** {cost_of_debt:.2f}%\n\n"
+    wacc_content += "---\n\n"
+    wacc_content += f"## **WACC: {WACC:.2f}%**\n"
+    
+    # Write to file
+    with open(filename, 'w') as f:
+        if existing_content:
+            f.write(existing_content)
+            f.write("\n\n---\n\n")
+            f.write(wacc_content)
+        else:
+            f.write(wacc_content)
+    
     print("=" * 60)
     print(" ")
-    print("WACC Calculation")
-    print(" ")
-    print(f"Cost of Equity: {cost_of_equity:.2f}%")
-    print(" ")
-    print(f"Cost of Debt: {cost_of_debt:.2f}%")
-    print(" ")
-    WACC = (float(weight_of_equity) * cost_of_equity) + (float(weight_of_debt) * cost_of_debt * (1 - tax_rate))
-    print(f"\033[36mWACC: {WACC:.2f}%\033[0m")
+    print(f"WACC Calculation saved to {filename}")
     print(" ")
     print("=" * 60)
 
@@ -450,284 +484,34 @@ def notes(ticker):
         store=True,
     )
 
-    # Create markdown filename based on ticker
     filename = f"{ticker}_summary.md"
+    
+    # Check if file exists and read existing content
+    existing_content = ""
+    try:
+        with open(filename, 'r') as f:
+            existing_content = f.read()
+    except FileNotFoundError:
+        pass  # File doesn't exist yet, which is fine
     
     # Write content to markdown file
     with open(filename, 'w') as f:
-        f.write(f"# {ticker} Summary\n\n")
-        f.write(response.output_text)
+        if existing_content:
+            # If there's existing content, preserve it and add new summary
+            f.write(existing_content)
+            f.write("\n\n---\n\n")
+            f.write(f"# {ticker} Summary (Updated)\n\n")
+            f.write(response.output_text)
+        else:
+            # If it's a new file, write normally
+            f.write(f"# {ticker} Summary\n\n")
+            f.write(response.output_text)
     
     print("=" * 60)
     print(" ")
     print(f"Company Summary saved to {filename}")
     print(" ")
     print("=" * 60)
-
-def calculate_growth_rate(terminal_value, last_fcf, wacc):
-    # Rearranged formula: g = (TV × WACC - FCF) / (TV + FCF)
-    numerator = (terminal_value * wacc) - last_fcf
-    denominator = terminal_value + last_fcf
-    growth_rate = numerator / denominator
-    
-    return growth_rate
-
-def generate_excel(ticker, type):
-    with open(f'{ticker}_financials.json', 'r') as file:
-            data = json.load(file)
-
-    income_statement = data['incomeStatement'][0]
-    cash_flow_statement = data['cashFlowStatement'][0]
-    balance_sheet = data['balanceSheet'][0]
-
-    wb = openpyxl.load_workbook('template.xlsx')
-    ws = wb.active
-        
-    debt = balance_sheet['Total Debt']
-    cash = balance_sheet['Cash And Cash Equivalents']
-    shares = income_statement['Basic Average Shares']
-
-    ws["U17"] = debt/1000000
-    ws["U15"] = cash/1000000
-    ws["U21"] = shares/1000000
-
-    rev = income_statement['Total Revenue']
-    cogs = income_statement['Cost Of Revenue']
-    operating_expense = income_statement['Operating Expense']
-    other_expense = income_statement['Net Interest Income']
-    tax = income_statement['Tax Provision']
-
-    # Use .get() method with default value of 0 to handle None or missing keys
-    div = income_statement.get("Preferred Stock Dividends", 0) or 0
-    div += income_statement.get('Otherunder Preferred Stock Dividend', 0) or 0
-
-    ws["C2"] = rev/1000000
-    ws["C4"] = cogs/1000000
-    ws["C10"] = operating_expense/1000000
-    ws["C16"] = other_expense/1000000
-    ws["C21"] = tax/1000000
-    ws["C25"] = div/1000000
-
-    lis = wacc_no_print(ticker)    
-    wacc = lis[0]
-    cost_of_equity = lis[1]
-    cost_of_debt = lis[2]
-    weight_of_equity = lis[3]
-    weight_of_debt = lis[4]
-
-    ws["U10"] = wacc/100
-    ws["U8"] = weight_of_equity
-    ws["U6"] = weight_of_debt
-    ws["U2"] = cost_of_equity/100
-    ws["U4"] = cost_of_debt/100
-
-    ws["L6"] = cash_flow_statement['Change In Working Capital']/1000000
-    ws["L10"] = cash_flow_statement['Capital Expenditure']/1000000
-
-    ws["L12"] = cash_flow_statement['Free Cash Flow']/1000000 - div/1000000
-
-    ws["L4"] = cash_flow_statement['Operating Cash Flow']/1000000 - cash_flow_statement['Change In Working Capital']/1000000 - income_statement['Net Income']/1000000
-
-    ws["Q16"] = discount_factor(wacc/100, 5)
-    ws["P16"] = discount_factor(wacc/100, 4)
-    ws["O16"] = discount_factor(wacc/100, 3)
-    ws["N16"] = discount_factor(wacc/100, 2)
-    ws["M16"] = discount_factor(wacc/100, 1)
-
-    # Save the workbook    
-    if (type == "default"):
-        wb.save(f'{ticker}_financial_model.xlsx')
-        return
-    elif(type == "expectation"):
-        stock = yf.Ticker(ticker)
-        price_to_fcf = None
-        cap = stock.info.get('marketCap', None)
-        marketcap = cap
-    
-        # Get free cash flow from cash flow statement
-        cash_flow = stock.cashflow
-        if not cash_flow.empty and 'Free Cash Flow' in cash_flow.index:
-            # Get the most recent free cash flow (first column)
-            fcf = cash_flow.loc['Free Cash Flow'].iloc[0]
-            
-            # If FCF is positive and we have market cap, calculate ratio
-            if fcf and fcf > 0 and cap:
-                price_to_fcf = cap / fcf
-
-        ws["M18"] = (fcf * ws["M16"].value)/1000000
-
-        yearone = (price_to_fcf/200) + 1
-        ws["D3"] = yearone
-        ws["D5"] = yearone
-        ws["D11"] = yearone
-        ws["C22"] = tax/income_statement['Pretax Income']
-        tax_rate = tax/income_statement['Pretax Income']
-        ws["D22"] = tax_rate
-        ws["E22"] = tax_rate
-        ws["F22"] = tax_rate
-        ws["G22"] = tax_rate
-        ws["H22"] = tax_rate
-        ws["M5"] = yearone
-        ws["M7"] = yearone
-        ws["M11"] = yearone
-
-        ws["D3"].number_format = '0.00'
-        ws["D5"].number_format = '0.00'
-        ws["D11"].number_format = '0.00'
-        ws["M5"].number_format = '0.00'
-        ws["M7"].number_format = '0.00'
-        ws["M11"].number_format = '0.00'
-
-        fcf = fcf * yearone 
-
-        ws["N18"] = (fcf * ws["N16"].value)/1000000
-
-        cap = cap * (1 + wacc/100)
-        pfcftwo = cap / fcf
-        yeartwo = (pfcftwo/200) + 1
-        ws["E3"] = yeartwo
-        ws["E5"] = yeartwo
-        ws["E11"] = yeartwo
-        ws["N5"] = yeartwo
-        ws["N7"] = yeartwo
-        ws["N11"] = yeartwo
-
-        ws["E3"].number_format = '0.00'
-        ws["E5"].number_format = '0.00'
-        ws["E11"].number_format = '0.00'
-        ws["N5"].number_format = '0.00'
-        ws["N7"].number_format = '0.00'
-        ws["N11"].number_format = '0.00'
-
-        fcf = fcf * yeartwo
-
-        ws["O18"] = (fcf * ws["O16"].value)/1000000
-
-        cap = cap * (1 + wacc/100)
-        pfcfthree = cap / fcf
-        yearthree = (pfcfthree/200) + 1
-        ws["F3"] = yearthree
-        ws["F5"] = yearthree
-        ws["F11"] = yearthree
-        ws["O5"] = yearthree
-        ws["O7"] = yearthree
-        ws["O11"] = yearthree
-
-        ws["F3"].number_format = '0.00'
-        ws["F5"].number_format = '0.00'
-        ws["F11"].number_format = '0.00'
-        ws["O5"].number_format = '0.00'
-        ws["O7"].number_format = '0.00'
-        ws["O11"].number_format = '0.00'
-
-        fcf = fcf * yearthree
-        ws["P18"] = (fcf * ws["P16"].value)/1000000
-        cap = cap * (1 + wacc/100)
-        pfcffour = cap / fcf
-        yearfour = (pfcffour/200) + 1
-        ws["G3"] = yearfour
-        ws["G5"] = yearfour
-        ws["G11"] = yearfour
-        ws["P5"] = yearfour
-        ws["P7"] = yearfour
-        ws["P11"] = yearfour
-
-        ws["P11"].number_format = '0.00'
-        ws["G3"].number_format = '0.00'
-        ws["G5"].number_format = '0.00'
-        ws["G11"].number_format = '0.00'
-        ws["P5"].number_format = '0.00'
-        ws["P7"].number_format = '0.00'
-
-        fcf = fcf * yearfour
-        ws["Q18"] = (fcf * ws["Q16"].value)/1000000
-        cap = cap * (1 + wacc/100)
-        pfcffive = cap / fcf
-        yearfive = (pfcffive/200) + 1
-        ws["H3"] = yearfive
-        ws["H5"] = yearfive
-        ws["H11"] = yearfive
-        ws["Q5"] = yearfive
-        ws["Q7"] = yearfive
-        ws["Q11"] = yearfive
-
-        ws["H3"].number_format = '0.00'
-        ws["H5"].number_format = '0.00'
-        ws["H11"].number_format = '0.00'
-        ws["Q5"].number_format = '0.00'
-        ws["Q7"].number_format = '0.00'
-        ws["Q11"].number_format = '0.00'
-
-        # subtracting too much need to account for quaters that have already happened
-        TV = (marketcap/1000000) - (ws["M18"].value + ws["N18"].value + ws["O18"].value + ws["P18"].value + ws["Q18"].value) - balance_sheet['Cash And Cash Equivalents']/1000000 + balance_sheet['Total Debt']/1000000
-        ws["Q20"] = TV
-
-        TTV = TV 
-
-        TV = TV*(1 + wacc/100)**5
-
-        ws["K24"] = TV
-        
-        g = calculate_growth_rate(TV*1000000, fcf, wacc/100)
-
-        ws["J25"] = g
-
-        wb.save(f'{ticker}_financial_model.xlsx')
-        return
-
-def discount_factor(rate, period):
-    return 1 / ((1 + rate) ** period)
-
-def wacc_no_print(ticker):
-    global yield_10y
-    yield_10y = get_10y_treasury_yield()
-
-    stock = yf.Ticker(ticker)
-    cap = stock.info.get('marketCap', None)
-    beta = stock.info.get("beta")
-
-    ERP = 10 - yield_10y
-
-    with open(f'{ticker}_financials.json', 'r') as file:
-            data = json.load(file)
-
-    # Access the first balance sheet entry
-    latest_balance_sheet = data['balanceSheet'][0]
-
-    income = data['incomeStatement'][0]
-
-    cash = data['cashFlowStatement'][0]
-
-    # Get Total Debt
-    total_debt = latest_balance_sheet['Total Debt']
-
-    tax_rate = income["Tax Rate For Calcs"]
-
-
-    weight_of_debt = total_debt / (total_debt + cap)
-    weight_of_equity = cap / (total_debt + cap)
-
-    weight_of_debt = f"{weight_of_debt:.4f}"
-    weight_of_equity = f"{weight_of_equity:.4f}"
-
-    if 'Interest Expense' in income:
-        interest_expense = income['Interest Expense']
-    else:
-        interest_expense = cash['Interest Paid Supplemental Data']
-    
-    if(interest_expense == None):
-        cost_of_debt = 0
-    else:
-        cost_of_debt = abs(interest_expense / total_debt) * 100
-
-    cost_of_equity = yield_10y + beta * ERP
-    
-    WACC = (float(weight_of_equity) * cost_of_equity) + (float(weight_of_debt) * cost_of_debt * (1 - tax_rate))
-
-    lis = [WACC, cost_of_equity, cost_of_debt, weight_of_equity, weight_of_debt]
-
-    return lis
-
 
 def main(command):
     
@@ -795,35 +579,11 @@ def csp(
     credit_spread_analysis(ticker)
 
 @app.command()
-def st(
-    ticker: str = typer.Argument(..., help="Ticker symbol of the company")
-):
-    '''Display financial statements summary for the given ticker'''
-    Statements(ticker)
-
-@app.command()
 def ce(
     ticker: str = typer.Argument(..., help="Ticker symbol of the company")
 ):
     '''Display competitor analysis for the given ticker'''
     compare(ticker)
-
-@app.command()
-def exl(
-    ticker: str = typer.Argument(..., help="Ticker symbol of the company"),
-    type: str = typer.Option(..., "--type", "-t", help="Type of Excel to generate")
-):
-    """
-    Generate an Excel file with financial data for the given ticker.
-    """
-    typer.echo(f"Generating {type} Excel file for ticker: {ticker}")
-    if(type == "default"):
-        generate_excel(ticker, "default")
-    
-    elif(type == "expectation"):
-        generate_excel(ticker, "expectation")
-    else:
-        typer.echo("Invalid type specified. Use 'default' or 'expectation'.")
 
 def get_current_ticker():
     """Get the currently active ticker"""
@@ -1094,10 +854,10 @@ def sw(ticker: str = typer.Argument(..., help="Ticker symbol to switch to")):
     typer.secho(f"✓ Switched to {ticker.upper()}", fg=typer.colors.GREEN)
 
 @app.command()
-def nt(
+def sm(
     ticker: str = typer.Argument(..., help="Ticker symbol of the company"),
 ):
-    '''Display earnings call summary for the given ticker and date'''
+    '''Give a summary of what the company does'''
     notes(ticker)
 
 if __name__ == "__main__":
