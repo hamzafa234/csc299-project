@@ -551,38 +551,43 @@ app = typer.Typer()
 STATE_FILE = ".current_ticker.json"
 
 @app.command()
-def lad(
-    ticker: str = typer.Argument(..., help="Ticker symbol of the company")
-):
-    '''Fetch and save financial data for the given ticker (must be run before other commands)'''
-    main(ticker)
-
-@app.command()
 def wac (
-    ticker: str = typer.Argument(..., help="Ticker symbol of the company")
+    ticker: str = typer.Option(None, "--ticker", "-t", help="Ticker symbol (uses current if not specified)")
 ):
     '''Calculate and display the WACC for the given ticker'''
+
+    if(ticker is None):
+        ticker = get_current_ticker()
+
     wacc_calculation(ticker)
 
 @app.command()
 def cs(
-    ticker: str = typer.Argument(..., help="Ticker symbol of the company")
+    ticker: str = typer.Option(None, "--ticker", "-t", help="Ticker symbol (uses current if not specified)")
 ):
     '''Display the capital structure summary for the given ticker'''
+
+    if(ticker is None):
+        ticker = get_current_ticker()
+
     capital_structure_summary(ticker)
 
 @app.command()
 def csp(
-    ticker: str = typer.Argument(..., help="Ticker symbol of the company")
+    ticker: str = typer.Option(None, "--ticker", "-t", help="Ticker symbol (uses current if not specified)")
 ):
     '''See credit spread for the given ticker'''
+    if(ticker is None):
+        ticker = get_current_ticker()
     credit_spread_analysis(ticker)
 
 @app.command()
 def ce(
-    ticker: str = typer.Argument(..., help="Ticker symbol of the company")
+    ticker: str = typer.Option(None, "--ticker", "-t", help="Ticker symbol (uses current if not specified)")
 ):
     '''Display competitor analysis for the given ticker'''
+    if(ticker is None):
+        ticker = get_current_ticker()
     compare(ticker)
 
 def get_current_ticker():
@@ -637,13 +642,36 @@ def bg(
             'id': max([t['id'] for t in tasks], default=0) + 1,
             'description': description,
             'completed': False,
-            'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'priority' : "!", 
         }
         tasks.append(task)
     
     save_tasks(tasks, filename)
     typer.secho(f"✓ Created research project for {ticker.upper()} with {len(initial_tasks)} tasks", fg=typer.colors.GREEN)
     typer.secho(f"  File: {filename}", fg=typer.colors.CYAN)
+
+    main(ticker)
+
+@app.command()
+def chg(
+    task_id: int = typer.Argument(..., help="Task ID"),
+    priority: str = typer.Argument(..., help="Priority level (e.g., !, !!, !!!)"),
+    ticker: str = typer.Option(None, "--ticker", "-t", help="Ticker symbol (uses current if not specified)")
+):
+    '''Change the priority of a task'''
+    filename = get_filename(ticker)
+    tasks = load_tasks(filename)
+    task = next((t for t in tasks if t['id'] == task_id), None)
+    
+    if task:
+        task['priority'] = priority
+        save_tasks(tasks, filename)
+        typer.secho(f"✓ Task {task_id} priority updated to '{priority}'", fg=typer.colors.GREEN)
+    else:
+        typer.secho(f"✗ Task with ID {task_id} not found", fg=typer.colors.RED)
+        raise typer.Exit(1)
+
 
 def load_tasks(filename):
     """Load tasks from JSON file"""
@@ -753,7 +781,9 @@ def lis(
     for task in tasks:
         status = "✓" if task['completed'] else "○"
         color = typer.colors.GREEN if task['completed'] else typer.colors.WHITE
-        typer.secho(f"{status} ID: {task['id']} | {task['description']}", fg=color)
+        priority = task.get('priority', '')
+        priority_display = f" [{priority}]" if priority else ""
+        typer.secho(f"{status} ID: {task['id']}{priority_display} | {task['description']}", fg=color)
         typer.echo(f"  Created: {task['created_at']}")
         if task['completed']:
             typer.echo(f"  Completed: {task.get('completed_at', 'N/A')}")
@@ -855,9 +885,12 @@ def sw(ticker: str = typer.Argument(..., help="Ticker symbol to switch to")):
 
 @app.command()
 def sm(
-    ticker: str = typer.Argument(..., help="Ticker symbol of the company"),
+    ticker: str = typer.Option(None, "--ticker", "-t", help="Ticker symbol (uses current if not specified)")
 ):
     '''Give a summary of what the company does'''
+
+    if(ticker is None):
+        ticker = get_current_ticker()
     notes(ticker)
 
 if __name__ == "__main__":
